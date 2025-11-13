@@ -1,22 +1,22 @@
-// src/screens/auth/LoginScreen.tsx
+// screens/auth/LoginScreen.tsx
+import { useRouter } from 'expo-router'; // ← Changed from navigation prop
+import { Formik } from 'formik';
 import React, { useContext } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-  TouchableOpacity,
+  ScrollView,
   StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Formik } from 'formik';
 import * as Yup from 'yup';
-import { AuthContext } from '../../context/AuthContext';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
+import { AuthContext } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { fontSize, fontWeight, spacing } from '../../theme';
 
 const LoginSchema = Yup.object().shape({
@@ -24,17 +24,15 @@ const LoginSchema = Yup.object().shape({
   password: Yup.string().min(6, 'Too short').required('Password is required'),
 });
 
-interface LoginScreenProps {
-  navigation: NativeStackNavigationProp<any>;
-}
-
-export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+export const LoginScreen = () => {  // ← Removed props
+  const router = useRouter();  // ← Use router instead
   const { login } = useContext(AuthContext);
   const { theme } = useTheme();
 
   const handleLogin = async (values: { email: string; password: string }) => {
     try {
       await login(values.email, values.password);
+      // Navigation happens in AuthContext or automatically by expo-router
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'Please check your credentials');
     }
@@ -94,7 +92,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 <Text style={[styles.footerText, { color: theme.textSecondary }]}>
                   Don't have an account?{' '}
                 </Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
                   <Text style={[styles.footerLink, { color: theme.primary }]}>Sign Up</Text>
                 </TouchableOpacity>
               </View>
@@ -144,3 +142,5 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
   },
 });
+
+export default LoginScreen;

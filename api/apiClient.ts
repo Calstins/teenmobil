@@ -1,8 +1,8 @@
 // src/api/apiClient.ts
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = 'https://your-backend-api.vercel.app/api';
+const API_BASE_URL = 'https://teensha.vercel.app/api';
 
 class ApiClient {
   private client: AxiosInstance;

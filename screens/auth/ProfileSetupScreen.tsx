@@ -1,24 +1,21 @@
-// src/screens/auth/ProfileSetupScreen.tsx
+// screens/auth/ProfileSetupScreen.tsx
+import { useRouter } from 'expo-router'; // ← Added
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
   Alert,
+  ScrollView,
   StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { Button } from '../../components/common/Button';
 import { useTheme } from '../../context/ThemeContext';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import { borderRadius, fontSize, fontWeight, spacing } from '../../theme';
 
-interface ProfileSetupScreenProps {
-  navigation: NativeStackNavigationProp<any>;
-}
-
-export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigation }) => {
+export const ProfileSetupScreen = () => { // ← Removed props
+  const router = useRouter(); // ← Added
   const { theme } = useTheme();
   const [step, setStep] = useState(1);
 
@@ -30,10 +27,8 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
         {
           text: 'OK',
           onPress: () => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Main' }],
-            });
+            // Navigate to main app (tabs)
+            router.replace('/(tabs)'); // ← Changed
           },
         },
       ]
@@ -44,10 +39,8 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
     if (step < 3) {
       setStep(step + 1);
     } else {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
+      // Navigate to main app after completing all steps
+      router.replace('/(tabs)'); // ← Changed
     }
   };
 
@@ -67,7 +60,10 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
               title="Upload Photo"
               variant="primary"
               style={styles.actionButton}
-              onPress={() => {}}
+              onPress={() => {
+                // TODO: Implement photo upload
+                console.log('Upload photo');
+              }}
             />
             <TouchableOpacity onPress={handleSkip}>
               <Text style={[styles.skipText, { color: theme.textTertiary }]}>Skip for now</Text>
@@ -89,7 +85,10 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
               title="Set Location"
               variant="primary"
               style={styles.actionButton}
-              onPress={() => {}}
+              onPress={() => {
+                // TODO: Implement location selection
+                console.log('Set location');
+              }}
             />
             <TouchableOpacity onPress={handleSkip}>
               <Text style={[styles.skipText, { color: theme.textTertiary }]}>Skip for now</Text>
@@ -111,7 +110,10 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
               title="Enable Notifications"
               variant="primary"
               style={styles.actionButton}
-              onPress={() => {}}
+              onPress={() => {
+                // TODO: Implement notification permissions
+                console.log('Enable notifications');
+              }}
             />
             <TouchableOpacity onPress={handleSkip}>
               <Text style={[styles.skipText, { color: theme.textTertiary }]}>Skip for now</Text>
@@ -231,3 +233,5 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
 });
+
+export default ProfileSetupScreen;

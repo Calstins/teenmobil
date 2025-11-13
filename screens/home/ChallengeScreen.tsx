@@ -1,22 +1,19 @@
-// src/screens/home/ChallengeScreen.tsx
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Alert, StyleSheet } from 'react-native';
+// screens/home/ChallengeScreen.tsx
+import { useRouter } from 'expo-router'; // ← Added
+import React, { useEffect, useState } from 'react';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { badgeApi } from '../../api/badgeApi';
+import { challengeApi } from '../../api/challengeApi';
+import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { Loading } from '../../components/common/Loading';
-import { Button } from '../../components/common/Button';
-import { challengeApi } from '../../api/challengeApi';
-import { badgeApi } from '../../api/badgeApi';
-import { ChallengeDetail } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import { borderRadius, fontSize, fontWeight, spacing } from '../../theme';
+import { ChallengeDetail } from '../../types';
 
-interface ChallengeScreenProps {
-  navigation: NativeStackNavigationProp<any>;
-}
-
-export const ChallengeScreen: React.FC<ChallengeScreenProps> = ({ navigation }) => {
+export const ChallengeScreen = () => { // ← Removed props
+  const router = useRouter(); // ← Added
   const { theme } = useTheme();
   const [challengeData, setChallengeData] = useState<ChallengeDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -181,7 +178,9 @@ export const ChallengeScreen: React.FC<ChallengeScreenProps> = ({ navigation }) 
           <View style={styles.tasksContainer}>
             {challengeData.tasks[selectedTab]?.map((task: any) => (
               <Card key={task.id} style={styles.taskCard}>
-                <TouchableOpacity onPress={() => navigation.navigate('TaskDetail', { taskId: task.id })}>
+                <TouchableOpacity 
+                 onPress={() => router.push(`/task/${task.id}` as any)}
+                >
                   <View style={styles.taskRow}>
                     <View style={styles.taskContent}>
                       <Text style={[styles.taskTitle, { color: theme.text }]}>{task.title}</Text>
@@ -333,3 +332,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
 });
+
+export default ChallengeScreen;

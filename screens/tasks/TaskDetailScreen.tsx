@@ -1,23 +1,20 @@
-// src/screens/task/TaskDetailScreen.tsx
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, TextInput, StyleSheet } from 'react-native';
+// screens/task/TaskDetailScreen.tsx
+import { useLocalSearchParams, useRouter } from 'expo-router'; // ← Added
+import React, { useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { taskApi } from '../../api/taskApi';
+import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { Loading } from '../../components/common/Loading';
-import { Button } from '../../components/common/Button';
-import { taskApi } from '../../api/taskApi';
 import { useTheme } from '../../context/ThemeContext';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RouteProp } from '@react-navigation/native';
-import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import { borderRadius, fontSize, fontWeight, spacing } from '../../theme';
 
-interface TaskDetailScreenProps {
-  navigation: NativeStackNavigationProp<any>;
-  route: RouteProp<{ params: { taskId: string } }, 'params'>;
-}
-
-export const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }) => {
-  const { taskId } = route.params;
+export const TaskDetailScreen = () => { // ← Removed props
+  const router = useRouter(); // ← Added
+  const { id } = useLocalSearchParams<{ id: string }>(); // ← Added - gets taskId from URL
+  const taskId = id; // ← Use id from URL params
+  
   const { theme } = useTheme();
   const [taskData, setTaskData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,7 +23,9 @@ export const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, 
   const [files, setFiles] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchTaskDetail();
+    if (taskId) {
+      fetchTaskDetail();
+    }
   }, [taskId]);
 
   const fetchTaskDetail = async () => {
@@ -56,7 +55,7 @@ export const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, 
     try {
       await taskApi.submitTask(taskId, content, files);
       Alert.alert('Success', 'Task submitted successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() },
+        { text: 'OK', onPress: () => router.back() }, // ← Changed
       ]);
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to submit task');
@@ -71,6 +70,11 @@ export const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, 
     return (
       <View style={[styles.emptyContainer, { backgroundColor: theme.background }]}>
         <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Task not found</Text>
+        <Button 
+          title="Go Back" 
+          onPress={() => router.back()} // ← Added
+          style={{ marginTop: spacing.md }}
+        />
       </View>
     );
   }
@@ -78,7 +82,10 @@ export const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity 
+          onPress={() => router.back()} // ← Changed
+          style={styles.backButton}
+        >
           <Icon name="arrow-left" size={24} color={theme.textInverse} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.textInverse }]}>
@@ -231,3 +238,5 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
 });
+
+export default TaskDetailScreen;

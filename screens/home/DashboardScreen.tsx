@@ -1,22 +1,19 @@
-// src/screens/home/DashboardScreen.tsx
+// screens/home/DashboardScreen.tsx
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useRouter } from 'expo-router'; // ← Added
 import { Card } from '../../components/common/Card';
 import { Loading } from '../../components/common/Loading';
 import { Button } from '../../components/common/Button';
 import { profileApi } from '../../api/profileApi';
 import { AuthContext } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DashboardData } from '../../types';
-import { fontSize, fontWeight, spacing, borderRadius, shadows } from '../../theme';
+import { fontSize, fontWeight, spacing, borderRadius } from '../../theme';
 
-interface DashboardScreenProps {
-  navigation: NativeStackNavigationProp<any>;
-}
-
-export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
+export const DashboardScreen = () => { // ← Removed props
+  const router = useRouter(); // ← Added
   const { user } = useContext(AuthContext);
   const { theme } = useTheme();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -66,7 +63,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
             </Text>
           </View>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Settings')}
+            onPress={() => router.push('/(tabs)/settings')} // ← Changed
             style={styles.settingsButton}
           >
             <Icon name="user" size={24} color={theme.textInverse} />
@@ -110,7 +107,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
             </View>
             <Button
               title="Continue Challenge"
-              onPress={() => navigation.navigate('Challenges')}
+              onPress={() => router.push('/(tabs)/challenges')} // ← Changed
               variant="primary"
               size="md"
             />
@@ -158,7 +155,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Actions</Text>
         <Card style={styles.actionsCard}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Badges')}
+            onPress={() => router.push('/(tabs)/badges')} // ← Changed
             style={[styles.actionItem, { borderBottomColor: theme.borderLight }]}
           >
             <View style={styles.actionLeft}>
@@ -170,7 +167,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
             <Icon name="chevron-right" size={20} color={theme.textTertiary} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Progress')}
+            onPress={() => router.push('/(tabs)/progress')} // ← Changed
             style={styles.actionItem}
           >
             <View style={styles.actionLeft}>
@@ -334,3 +331,5 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
   },
 });
+
+export default DashboardScreen;
