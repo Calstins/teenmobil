@@ -1,16 +1,18 @@
 // src/components/common/Input.tsx
 import React, { useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, TextInputProps, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { View, TextInput, Text, TouchableOpacity, TextInputProps, StyleSheet, ViewStyle, TextStyle, StyleProp } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useTheme } from '../../context/ThemeContext';
 import { borderRadius, fontSize, fontWeight, spacing } from '../../theme';
 
-interface InputProps extends TextInputProps {
+interface InputProps extends Omit<TextInputProps, 'style'> {
   label?: string;
   error?: string;
   icon?: string;
   rightIcon?: string;
   onRightIconPress?: () => void;
+  style?: StyleProp<ViewStyle>;
+  inputStyle?: StyleProp<TextStyle>;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -21,10 +23,11 @@ export const Input: React.FC<InputProps> = ({
   onRightIconPress,
   secureTextEntry,
   style,
+  inputStyle,
   ...props
 }) => {
   const { theme } = useTheme();
-  const [isSecure, setIsSecure] = useState(secureTextEntry);
+  const [isSecure, setIsSecure] = useState(!!secureTextEntry);
   const [isFocused, setIsFocused] = useState(false);
 
   const getBorderColor = () => {
@@ -80,11 +83,13 @@ export const Input: React.FC<InputProps> = ({
           />
         )}
         <TextInput
-          style={textInputStyle}
+          style={[textInputStyle, inputStyle]}
           placeholderTextColor={theme.textTertiary}
           secureTextEntry={isSecure}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          selectionColor={theme.primary}
+          cursorColor={theme.primary}
           {...props}
         />
         {secureTextEntry && (

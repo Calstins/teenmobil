@@ -4,7 +4,7 @@ import { ApiResponse } from '../types';
 
 export const taskApi = {
   getTaskDetails: async (taskId: string): Promise<ApiResponse<any>> => {
-    return await apiClient.get(`/tasks/${taskId}`);
+    return await apiClient.get(`/teen/tasks/${taskId}`);
   },
 
   submitTask: async (
@@ -24,13 +24,13 @@ export const taskApi = {
       } as any);
     });
 
-    return await apiClient.post('/submissions', formData, {
+    return await apiClient.post('/teen/submissions', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
 
   getMySubmissions: async (): Promise<ApiResponse<any[]>> => {
-    return await apiClient.get('/submissions/my-submissions');
+    return await apiClient.get('/teen/submissions/my-submissions');
   },
 };
 

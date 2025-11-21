@@ -1,11 +1,26 @@
 // app/(tabs)/_layout.tsx
-import { Tabs } from 'expo-router'
+import { useContext } from 'react';
+import { Tabs, Redirect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import { AuthContext } from '../../context/AuthContext';
+import { Loading } from '../../components/common/Loading';
 import { spacing, fontSize, fontWeight } from '../../theme';
 
 export default function TabsLayout() {
   const { theme } = useTheme();
+  const { isAuthenticated, isLoading } = useContext(AuthContext);
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return <Loading message="Loading..." />;
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    console.log('🔒 Tabs: Not authenticated, redirecting to login');
+    return <Redirect href="/(auth)/login" />;
+  }
 
   return (
     <Tabs
@@ -53,6 +68,13 @@ export default function TabsLayout() {
         options={{
           title: 'Badges',
           tabBarIcon: ({ color, size }) => <Feather name="award" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="community"
+        options={{
+          title: 'Community',
+          tabBarIcon: ({ color, size }) => <Feather name="users" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

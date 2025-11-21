@@ -13,10 +13,12 @@ import { Card } from '../../components/common/Card';
 import { Loading } from '../../components/common/Loading';
 import { progressApi } from '../../api/progressApi';
 import { useTheme } from '../../context/ThemeContext';
+import { useRouter } from 'expo-router';
 import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 
 export const ProgressScreen: React.FC = () => {
   const { theme } = useTheme();
+  const router = useRouter();
   const [yearlyData, setYearlyData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -124,7 +126,8 @@ export const ProgressScreen: React.FC = () => {
           </View>
         ) : (
           yearlyData?.progress.map((item: any) => (
-            <Card key={item.id} style={styles.progressCard}>
+
+            <Card style={styles.progressCard} key={item.id}>
               <View style={styles.progressHeader}>
                 <View>
                   <Text style={[styles.progressMonth, { color: theme.text }]}>
@@ -134,11 +137,14 @@ export const ProgressScreen: React.FC = () => {
                     {item.challenge.theme}
                   </Text>
                 </View>
-                {item.percentage === 100 && (
-                  <View style={[styles.completeBadge, { backgroundColor: theme.secondaryLight }]}>
-                    <Icon name="check-circle" size={24} color={theme.secondary} />
-                  </View>
-                )}
+                <View style={styles.progressHeaderRight}>
+                  {item.percentage === 100 && (
+                    <View style={[styles.completeBadge, { backgroundColor: theme.secondaryLight }]}>
+                      <Icon name="check-circle" size={24} color={theme.secondary} />
+                    </View>
+                  )}
+                  {/* <Icon name="chevron-right" size={20} color={theme.textTertiary} style={styles.chevron} /> */}
+                </View>
               </View>
 
               <View style={styles.progressBarSection}>
@@ -178,10 +184,11 @@ export const ProgressScreen: React.FC = () => {
                 </View>
               )}
             </Card>
+
           ))
         )}
       </ScrollView>
-    </View>
+    </View >
   );
 };
 
@@ -260,6 +267,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
+  progressHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   progressMonth: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
@@ -305,5 +317,8 @@ const styles = StyleSheet.create({
   completedText: {
     fontSize: fontSize.xs,
     marginLeft: spacing.xs,
+  },
+  chevron: {
+    marginLeft: spacing.sm,
   },
 });

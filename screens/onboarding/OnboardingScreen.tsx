@@ -1,4 +1,4 @@
-// screens/onboarding/OnboardingScreen.tsx - FIXED
+// screens/onboarding/OnboardingScreen.tsx
 import React, { useRef, useState } from 'react';
 import {
   View,
@@ -16,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Feather';
 import { Button } from '../../components/common/Button';
 import { useTheme } from '../../context/ThemeContext';
-import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import { spacing, fontSize, fontWeight, borderRadius, Fonts } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,28 +26,28 @@ const onboardingData = [
     title: 'Welcome to TeenShapers! 🎉',
     description: 'Discover exciting monthly challenges designed to help you grow spiritually, mentally, and socially.',
     image: 'https://images.unsplash.com/photo-1529390079861-591de354faf5?w=800&h=600&fit=crop',
-    gradient: ['#667eea', '#764ba2'] as const, 
+    gradient: ['#FF6B35', '#FF946B'] as const,
   },
   {
     id: 2,
     title: 'Complete Fun Challenges 🚀',
     description: 'Engage in Bible studies, read inspiring books, participate in activities, and work on exciting projects!',
     image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop',
-    gradient: ['#f093fb', '#f5576c'] as const, 
+    gradient: ['#FF946B', '#FFBFA9'] as const,
   },
   {
     id: 3,
     title: 'Earn Badges & Rewards 🏆',
     description: 'Complete challenges to earn cool badges and enter our annual raffle for amazing prizes!',
     image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&h=600&fit=crop',
-    gradient: ['#4facfe', '#00f2fe'] as const, 
+    gradient: ['#FFBFA9', '#FFD6C7'] as const,
   },
   {
     id: 4,
     title: 'Join Our Community 💪',
     description: 'Connect with teens from around the world who are growing in faith and character together!',
     image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&h=600&fit=crop',
-    gradient: ['#43e97b', '#38f9d7'] as const, 
+    gradient: ['#FFD6C7', '#FFEBE4'] as const,
   },
 ];
 
@@ -103,7 +103,7 @@ export const OnboardingScreen = () => {
           style={styles.skipButton}
           onPress={skipOnboarding}
         >
-          <Text style={[styles.skipText, { color: theme.textSecondary }]}>
+          <Text style={[styles.skipText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
             Skip
           </Text>
         </TouchableOpacity>
@@ -136,8 +136,12 @@ export const OnboardingScreen = () => {
 
               {/* Content */}
               <View style={styles.content}>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.description}>{item.description}</Text>
+                <Text style={[styles.title, { fontFamily: Fonts.header }]}>
+                  {item.title}
+                </Text>
+                <Text style={[styles.description, { fontFamily: Fonts.body }]}>
+                  {item.description}
+                </Text>
               </View>
             </LinearGradient>
           </View>
@@ -227,7 +231,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.bold,
   },
   slide: {
     width,
@@ -257,7 +261,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: fontSize['4xl'],
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.extrabold,
     color: '#fff',
     marginBottom: spacing.md,
     textAlign: 'center',
@@ -272,8 +276,8 @@ const styles = StyleSheet.create({
     height: height * 0.3,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
-    borderTopLeftRadius: borderRadius.xl, // ← Fixed: Changed from '3xl' to 'xl'
-    borderTopRightRadius: borderRadius.xl, // ← Fixed: Changed from '3xl' to 'xl'
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
     marginTop: -20,
   },
   pagination: {

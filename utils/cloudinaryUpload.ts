@@ -1,112 +1,154 @@
 // utils/cloudinaryUpload.ts
-// Direct upload to Cloudinary without base64 conversion
-import * as FileSystem from 'expo-file-system';
-
-const CLOUDINARY_CLOUD_NAME = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || 'calstech';
-const UPLOAD_PRESET = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'teenshapers';
+const CLOUDINARY_CLOUD_NAME =
+  process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || 'calstech';
+const UPLOAD_PRESET =
+  process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'estate';
 
 /**
  * Upload image directly to Cloudinary
  * @param imageUri - Local file URI from ImagePicker
  * @returns Cloudinary secure URL
  */
-export const uploadImageToCloudinary = async (imageUri: string): Promise<string> => {
+export const uploadImageToCloudinary = async (
+  imageUri: string
+): Promise<string> => {
   try {
     // Validate URI
-    if (!imageUri || !imageUri.startsWith('file://')) {
-      throw new Error('Invalid image URI');
+    if (!imageUri) {
+      throw new Error('No image URI provided');
     }
 
-    // Get file info
-    const fileInfo = await FileSystem.getInfoAsync(imageUri);
-    if (!fileInfo.exists) {
-      throw new Error('Image file not found');
-    }
+    console.log('📤 Starting upload to Cloudinary...');
+    console.log('Image URI:', imageUri);
 
     // Create form data
     const formData = new FormData();
-    
+
     // Extract filename from URI
-    const filename = imageUri.split('/').pop() || 'profile.jpg';
-    
-    // Append image file (NO BASE64 - direct file upload)
+    const uriParts = imageUri.split('/');
+    const filename = uriParts[uriParts.length - 1] || `photo_${Date.now()}.jpg`;
+
+    // Append image file - React Native handles this automatically!
     formData.append('file', {
       uri: imageUri,
       type: 'image/jpeg',
       name: filename,
     } as any);
-    
+
     formData.append('upload_preset', UPLOAD_PRESET);
     formData.append('folder', 'teenshapers/profiles');
-    formData.append('public_id', `teen_${Date.now()}`);
 
-    console.log('📤 Uploading to Cloudinary...');
     console.log('Cloud Name:', CLOUDINARY_CLOUD_NAME);
     console.log('Upload Preset:', UPLOAD_PRESET);
 
-    // Upload directly to Cloudinary API
+    // Upload to Cloudinary
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
       {
         method: 'POST',
         body: formData,
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
       }
     );
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('❌ Cloudinary error:', errorData);
-      throw new Error(errorData.error?.message || 'Upload failed');
+      console.error('❌ Cloudinary error:', data);
+      throw new Error(data.error?.message || 'Upload failed');
     }
 
-    const data = await response.json();
-    
     console.log('✅ Upload successful!');
     console.log('URL:', data.secure_url);
-    
+
     return data.secure_url;
-    
   } catch (error: any) {
-    console.error('❌ Cloudinary upload error:', error);
+    console.error('❌ Upload error:', error);
     throw new Error(error.message || 'Failed to upload image');
   }
 };
 
 /**
- * Upload image with progress tracking using FileSystem.uploadAsync
+ * Upload with progress tracking using XMLHttpRequest
+ * @param imageUri - Local file URI from ImagePicker
+ * @param onProgress - Progress callback (0-100)
+ * @returns Cloudinary secure URL
  */
 export const uploadImageWithProgress = async (
   imageUri: string,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     try {
-      const uploadResult = await FileSystem.uploadAsync(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        imageUri,
-        {
-          httpMethod: 'POST',
-          fieldName: 'file',
-          parameters: {
-            upload_preset: UPLOAD_PRESET,
-            folder: 'teenshapers',
-            public_id: `teen_${Date.now()}`,
-          },
-        }
+      const xhr = new XMLHttpRequest();
+      const formData = new FormData();
+
+      // Extract filename
+      const uriParts = imageUri.split('/');
+      const filename =
+        uriParts[uriParts.length - 1] || `photo_${Date.now()}.jpg`;
+
+      // Append file
+      formData.append('file', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: filename,
+      } as any);
+
+      formData.append('upload_preset', UPLOAD_PRESET);
+      formData.append('folder', 'teenshapers/profiles');
+
+      xhr.open(
+        'POST',
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`
       );
 
-      if (uploadResult.status !== 200) {
-        throw new Error('Upload failed');
-      }
+      // Track upload progress
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percentComplete = Math.round(
+            (event.loaded / event.total) * 100
+          );
+          onProgress(percentComplete);
+          console.log(`📤 Upload progress: ${percentComplete}%`);
+        }
+      };
 
-      const data = JSON.parse(uploadResult.body);
-      resolve(data.secure_url);
-      
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          console.log('✅ Upload successful!');
+          console.log('URL:', data.secure_url);
+          resolve(data.secure_url);
+        } else {
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            console.error('❌ Upload failed:', errorData);
+            reject(new Error(errorData.error?.message || 'Upload failed'));
+          } catch {
+            reject(new Error('Upload failed'));
+          }
+        }
+      };
+
+      xhr.onerror = () => {
+        console.error('❌ Network error');
+        reject(new Error('Network error during upload'));
+      };
+
+      xhr.ontimeout = () => {
+        console.error('❌ Upload timeout');
+        reject(new Error('Upload timeout'));
+      };
+
+      console.log('📤 Starting upload with progress tracking...');
+      xhr.send(formData);
     } catch (error: any) {
-      reject(error);
+      console.error('❌ Upload error:', error);
+      reject(new Error(error.message || 'Failed to upload image'));
     }
   });
 };

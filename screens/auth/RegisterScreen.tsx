@@ -22,7 +22,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { useTheme } from '../../context/ThemeContext';
-import { fontSize, fontWeight, spacing, borderRadius } from '../../theme';
+import { fontSize, fontWeight, spacing, borderRadius, Fonts } from '../../theme';
 import { uploadImageToCloudinary } from '../../utils/cloudinaryUpload';
 
 // Validation schemas for each step
@@ -74,14 +74,14 @@ export const RegisterScreen = () => {
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert('Permission Required', 'We need camera roll permissions to select a photo.');
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -89,20 +89,20 @@ export const RegisterScreen = () => {
 
     if (!result.canceled) {
       setProfileImage(result.assets[0].uri);
-      // Upload immediately after selection
       uploadImage(result.assets[0].uri);
     }
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert('Permission Required', 'We need camera permissions to take a photo.');
       return;
     }
 
     const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -110,7 +110,6 @@ export const RegisterScreen = () => {
 
     if (!result.canceled) {
       setProfileImage(result.assets[0].uri);
-      // Upload immediately after taking photo
       uploadImage(result.assets[0].uri);
     }
   };
@@ -119,13 +118,12 @@ export const RegisterScreen = () => {
     try {
       setIsUploadingImage(true);
       console.log('📤 Uploading image to Cloudinary...');
-      
-      // Direct upload to Cloudinary (NO BASE64 CONVERSION!)
+
       const cloudinaryUrl = await uploadImageToCloudinary(imageUri);
-      
+
       setProfileImageUrl(cloudinaryUrl);
       console.log('✅ Image uploaded successfully:', cloudinaryUrl);
-      
+
       Alert.alert('Success', 'Profile photo uploaded!');
     } catch (error: any) {
       console.error('❌ Upload failed:', error);
@@ -170,8 +168,7 @@ export const RegisterScreen = () => {
   const handleRegister = async (values: any, formikBag: any) => {
     try {
       const finalData = { ...formData, ...values };
-      
-      // Register with Cloudinary URL (NOT base64!)
+
       await register({
         email: finalData.email,
         password: finalData.password,
@@ -181,10 +178,8 @@ export const RegisterScreen = () => {
         state: finalData.state,
         country: finalData.country,
         parentEmail: finalData.parentEmail,
-        profilePhotoUrl: profileImageUrl ?? undefined, 
+        profilePhotoUrl: profileImageUrl ?? undefined,
       });
-      
-      // Navigation happens in AuthContext
     } catch (error: any) {
       formikBag.setSubmitting(false);
       Alert.alert('Registration Failed', error.message || 'Please try again');
@@ -208,7 +203,9 @@ export const RegisterScreen = () => {
     <View>
       {/* Profile Image Upload */}
       <View style={styles.imageSection}>
-        <Text style={[styles.imageLabel, { color: theme.text }]}>Profile Photo</Text>
+        <Text style={[styles.imageLabel, { color: theme.text, fontFamily: Fonts.body }]}>
+          Profile Photo
+        </Text>
         <TouchableOpacity
           style={[styles.imagePicker, { borderColor: theme.borderLight }]}
           onPress={handleImageUpload}
@@ -217,7 +214,7 @@ export const RegisterScreen = () => {
           {isUploadingImage ? (
             <View style={styles.imagePlaceholder}>
               <ActivityIndicator size="large" color={theme.primary} />
-              <Text style={[styles.imageText, { color: theme.textSecondary, marginTop: spacing.sm }]}>
+              <Text style={[styles.imageText, { color: theme.textSecondary, marginTop: spacing.sm, fontFamily: Fonts.body }]}>
                 Uploading...
               </Text>
             </View>
@@ -225,7 +222,7 @@ export const RegisterScreen = () => {
             <>
               <Image source={{ uri: profileImage }} style={styles.profileImage} />
               {profileImageUrl && (
-                <View style={styles.uploadSuccessBadge}>
+                <View style={[styles.uploadSuccessBadge, { backgroundColor: theme.success }]}>
                   <Icon name="check-circle" size={20} color="#fff" />
                 </View>
               )}
@@ -233,14 +230,14 @@ export const RegisterScreen = () => {
           ) : (
             <View style={styles.imagePlaceholder}>
               <Icon name="camera" size={32} color={theme.textTertiary} />
-              <Text style={[styles.imageText, { color: theme.textSecondary }]}>
+              <Text style={[styles.imageText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
                 Add Photo
               </Text>
             </View>
           )}
         </TouchableOpacity>
         {profileImageUrl && (
-          <Text style={[styles.uploadedText, { color: theme.success }]}>
+          <Text style={[styles.uploadedText, { color: theme.success, fontFamily: Fonts.body }]}>
             ✓ Photo uploaded successfully
           </Text>
         )}
@@ -269,7 +266,7 @@ export const RegisterScreen = () => {
 
       {/* Gender Selection */}
       <View style={styles.genderSection}>
-        <Text style={[styles.label, { color: theme.text }]}>Gender *</Text>
+        <Text style={[styles.label, { color: theme.text, fontFamily: Fonts.body }]}>Gender *</Text>
         <View style={styles.genderOptions}>
           <TouchableOpacity
             style={[
@@ -289,7 +286,10 @@ export const RegisterScreen = () => {
             <Text
               style={[
                 styles.genderText,
-                { color: props.values.gender === 'Male' ? '#fff' : theme.textSecondary },
+                {
+                  color: props.values.gender === 'Male' ? '#fff' : theme.textSecondary,
+                  fontFamily: Fonts.body
+                },
               ]}
             >
               Male
@@ -314,7 +314,10 @@ export const RegisterScreen = () => {
             <Text
               style={[
                 styles.genderText,
-                { color: props.values.gender === 'Female' ? '#fff' : theme.textSecondary },
+                {
+                  color: props.values.gender === 'Female' ? '#fff' : theme.textSecondary,
+                  fontFamily: Fonts.body
+                },
               ]}
             >
               Female
@@ -322,7 +325,7 @@ export const RegisterScreen = () => {
           </TouchableOpacity>
         </View>
         {props.touched.gender && props.errors.gender && (
-          <Text style={[styles.errorText, { color: theme.error }]}>
+          <Text style={[styles.errorText, { color: theme.error, fontFamily: Fonts.body }]}>
             {props.errors.gender}
           </Text>
         )}
@@ -415,15 +418,15 @@ export const RegisterScreen = () => {
         >
           {props.values.agreedToTerms && <Icon name="check" size={16} color="#fff" />}
         </View>
-        <Text style={[styles.checkboxLabel, { color: theme.text }]}>
+        <Text style={[styles.checkboxLabel, { color: theme.text, fontFamily: Fonts.body }]}>
           I agree to the{' '}
-          <Text style={{ color: theme.primary, fontWeight: fontWeight.semibold }}>
+          <Text style={{ color: theme.primary, fontWeight: fontWeight.bold }}>
             Terms & Conditions
           </Text>
         </Text>
       </TouchableOpacity>
       {props.touched.agreedToTerms && props.errors.agreedToTerms && (
-        <Text style={[styles.errorText, { color: theme.error }]}>
+        <Text style={[styles.errorText, { color: theme.error, fontFamily: Fonts.body }]}>
           {props.errors.agreedToTerms}
         </Text>
       )}
@@ -444,12 +447,12 @@ export const RegisterScreen = () => {
         >
           {props.values.parentalConsent && <Icon name="check" size={16} color="#fff" />}
         </View>
-        <Text style={[styles.checkboxLabel, { color: theme.text }]}>
+        <Text style={[styles.checkboxLabel, { color: theme.text, fontFamily: Fonts.body }]}>
           I confirm that I have parental/guardian consent to use this app (required for users under 18)
         </Text>
       </TouchableOpacity>
       {props.touched.parentalConsent && props.errors.parentalConsent && (
-        <Text style={[styles.errorText, { color: theme.error }]}>
+        <Text style={[styles.errorText, { color: theme.error, fontFamily: Fonts.body }]}>
           {props.errors.parentalConsent}
         </Text>
       )}
@@ -464,8 +467,10 @@ export const RegisterScreen = () => {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Create Account</Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          <Text style={[styles.title, { color: theme.text, fontFamily: Fonts.header }]}>
+            Create Account
+          </Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
             Step {currentStep} of 3
           </Text>
         </View>
@@ -522,11 +527,13 @@ export const RegisterScreen = () => {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+          <Text style={[styles.footerText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
             Already have an account?{' '}
           </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-            <Text style={[styles.footerLink, { color: theme.primary }]}>Sign In</Text>
+            <Text style={[styles.footerLink, { color: theme.primary, fontFamily: Fonts.body }]}>
+              Sign In
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -550,7 +557,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: fontSize['4xl'],
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.extrabold,
   },
   subtitle: {
     marginTop: spacing.sm,
@@ -602,7 +609,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 5,
     right: 5,
-    backgroundColor: '#10b981',
     borderRadius: 15,
     padding: 4,
   },
@@ -635,7 +641,7 @@ const styles = StyleSheet.create({
   },
   genderText: {
     fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.bold,
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -681,7 +687,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
   },
   footerLink: {
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.bold,
     fontSize: fontSize.base,
   },
 });

@@ -4,12 +4,12 @@ import { ApiResponse } from '../types';
 
 export const badgeApi = {
   purchaseBadge: async (badgeId: string): Promise<ApiResponse<any>> => {
-    return await apiClient.post('/badges/purchase', { badgeId });
+    return await apiClient.post('/teen/badges/purchase', { badgeId });
   },
 
   getMyBadges: async (year?: number): Promise<ApiResponse<any[]>> => {
     const params = year ? `?year=${year}` : '';
-    return await apiClient.get(`/badges/my-badges${params}`);
+    return await apiClient.get(`/teen/badges/my-badges${params}`);
   },
 };
 

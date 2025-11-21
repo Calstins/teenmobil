@@ -19,11 +19,12 @@ const THEME_STORAGE_KEY = '@app_theme_mode';
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const systemColorScheme = useColorScheme();
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
-  
+  // Changed default from 'auto' to 'light'
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('light');
+
   // Determine if dark mode is active
   const isDark = themeMode === 'dark' || (themeMode === 'auto' && systemColorScheme === 'dark');
-  
+
   // Get current theme
   const theme = isDark ? darkTheme : lightTheme;
 
@@ -38,6 +39,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (savedMode && (savedMode === 'light' || savedMode === 'dark' || savedMode === 'auto')) {
         setThemeModeState(savedMode as ThemeMode);
       }
+      // If no saved preference exists, it will stay as 'light' (the default)
     } catch (error) {
       console.error('Failed to load theme preference:', error);
     }

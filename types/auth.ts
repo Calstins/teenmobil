@@ -13,6 +13,8 @@ export interface Teen {
   optInPublic: boolean;
   createdAt: string;
   updatedAt: string;
+  isEmailVerified?: boolean;
+  needsProfileSetup?: boolean;
 }
 
 export interface RegisterData {

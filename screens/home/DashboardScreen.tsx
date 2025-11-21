@@ -2,18 +2,45 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import { useRouter } from 'expo-router'; // ← Added
+import { useRouter } from 'expo-router';
 import { Card } from '../../components/common/Card';
 import { Loading } from '../../components/common/Loading';
 import { Button } from '../../components/common/Button';
 import { profileApi } from '../../api/profileApi';
 import { AuthContext } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { DashboardData } from '../../types';
-import { fontSize, fontWeight, spacing, borderRadius } from '../../theme';
+import { fontSize, fontWeight, spacing, borderRadius, Fonts } from '../../theme';
 
-export const DashboardScreen = () => { // ← Removed props
-  const router = useRouter(); // ← Added
+interface DashboardData {
+  stats: {
+    totalSubmissions: number;
+    totalBadges: number;
+    completedChallenges: number;
+    averageProgress: number;
+  };
+  currentChallenge: {
+    id: string;
+    theme: string;
+    instructions: string;
+    progress: {
+      tasksTotal: number;
+      tasksCompleted: number;
+      percentage: number;
+    };
+    badge?: {
+      id: string;
+      name: string;
+      description: string;
+      price: number;
+      teenStatus: string;
+    };
+  } | null;
+  recentSubmissions: any[];
+  upcomingChallenges: any[];
+}
+
+export const DashboardScreen = () => {
+  const router = useRouter();
   const { user } = useContext(AuthContext);
   const { theme } = useTheme();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -28,6 +55,7 @@ export const DashboardScreen = () => { // ← Removed props
     try {
       const response = await profileApi.getDashboard();
       if (response.success && response.data) {
+        console.log('Dashboard data:', response.data);
         setDashboardData(response.data);
       }
     } catch (error) {
@@ -55,15 +83,15 @@ export const DashboardScreen = () => { // ← Removed props
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
         <View style={styles.headerContent}>
           <View>
-            <Text style={[styles.greeting, { color: theme.textInverse }]}>
+            <Text style={[styles.greeting, { color: theme.textInverse, fontFamily: Fonts.header }]}>
               Hey, {user?.name?.split(' ')[0]}! 👋
             </Text>
-            <Text style={[styles.subtitle, { color: theme.primaryLight }]}>
+            <Text style={[styles.subtitle, { color: theme.primaryLight, fontFamily: Fonts.body }]}>
               Ready to shape up today?
             </Text>
           </View>
           <TouchableOpacity
-            onPress={() => router.push('/(tabs)/settings')} // ← Changed
+            onPress={() => router.push('/(tabs)/settings')}
             style={styles.settingsButton}
           >
             <Icon name="user" size={24} color={theme.textInverse} />
@@ -74,18 +102,20 @@ export const DashboardScreen = () => { // ← Removed props
       <View style={styles.content}>
         {dashboardData?.currentChallenge ? (
           <Card variant="elevated" style={styles.challengeCard}>
-            <View style={styles.challengeHeader}>
-              <Text style={[styles.challengeTitle, { color: theme.text }]}>
-                {dashboardData.currentChallenge.theme}
+            <View style={[styles.activeBadge, { backgroundColor: theme.successLight, alignSelf: 'flex-start' }]}>
+              <Text style={[styles.badgeText, { color: theme.success, fontFamily: Fonts.body }]}>
+                Active
               </Text>
-              <View style={[styles.activeBadge, { backgroundColor: theme.successLight }]}>
-                <Text style={[styles.badgeText, { color: theme.secondary }]}>Active</Text>
-              </View>
             </View>
+            <Text style={[styles.challengeTitle, { color: theme.text, fontFamily: Fonts.header }]}>
+              {dashboardData.currentChallenge.theme}
+            </Text>
             <View style={styles.progressSection}>
               <View style={styles.progressLabelRow}>
-                <Text style={[styles.progressLabel, { color: theme.textSecondary }]}>Progress</Text>
-                <Text style={[styles.progressPercentage, { color: theme.primary }]}>
+                <Text style={[styles.progressLabel, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                  Progress
+                </Text>
+                <Text style={[styles.progressPercentage, { color: theme.primary, fontFamily: Fonts.body }]}>
                   {Math.round(dashboardData.currentChallenge.progress.percentage)}%
                 </Text>
               </View>
@@ -100,14 +130,14 @@ export const DashboardScreen = () => { // ← Removed props
                   ]}
                 />
               </View>
-              <Text style={[styles.progressStats, { color: theme.textTertiary }]}>
+              <Text style={[styles.progressStats, { color: theme.textTertiary, fontFamily: Fonts.body }]}>
                 {dashboardData.currentChallenge.progress.tasksCompleted} of{' '}
                 {dashboardData.currentChallenge.progress.tasksTotal} tasks completed
               </Text>
             </View>
             <Button
               title="Continue Challenge"
-              onPress={() => router.push('/(tabs)/challenges')} // ← Changed
+              onPress={() => router.push('/(tabs)/challenges')}
               variant="primary"
               size="md"
             />
@@ -116,65 +146,77 @@ export const DashboardScreen = () => { // ← Removed props
           <Card variant="elevated" style={styles.challengeCard}>
             <View style={styles.emptyChallenge}>
               <Icon name="calendar" size={48} color={theme.borderLight} />
-              <Text style={[styles.emptyTitle, { color: theme.textSecondary }]}>
+              <Text style={[styles.emptyTitle, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
                 No active challenge right now
               </Text>
-              <Text style={[styles.emptySubtitle, { color: theme.textTertiary }]}>
+              <Text style={[styles.emptySubtitle, { color: theme.textTertiary, fontFamily: Fonts.body }]}>
                 Check back soon!
               </Text>
             </View>
           </Card>
         )}
 
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Your Stats</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text, fontFamily: Fonts.header }]}>
+          Your Stats
+        </Text>
         <View style={styles.statsGrid}>
           <Card style={styles.statCard}>
             <View style={styles.statContent}>
               <View style={[styles.statIcon, { backgroundColor: theme.primaryLight }]}>
                 <Icon name="check-circle" size={24} color={theme.primary} />
               </View>
-              <Text style={[styles.statValue, { color: theme.text }]}>
-                {dashboardData?.yearlyStats.completedChallenges || 0}
+              <Text style={[styles.statValue, { color: theme.text, fontFamily: Fonts.body }]}>
+                {dashboardData?.stats.completedChallenges || 0}
               </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Completed</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                Completed
+              </Text>
             </View>
           </Card>
           <Card style={styles.statCard}>
             <View style={styles.statContent}>
-              <View style={[styles.statIcon, { backgroundColor: theme.secondaryLight }]}>
-                <Icon name="award" size={24} color={theme.secondary} />
+              <View style={[styles.statIcon, { backgroundColor: theme.successLight }]}>
+                <Icon name="award" size={24} color={theme.success} />
               </View>
-              <Text style={[styles.statValue, { color: theme.text }]}>
-                {dashboardData?.yearlyStats.earnedBadges || 0}
+              <Text style={[styles.statValue, { color: theme.text, fontFamily: Fonts.body }]}>
+                {dashboardData?.stats.totalBadges || 0}
               </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Badges Earned</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                Badges Earned
+              </Text>
             </View>
           </Card>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Actions</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text, fontFamily: Fonts.header }]}>
+          Quick Actions
+        </Text>
         <Card style={styles.actionsCard}>
           <TouchableOpacity
-            onPress={() => router.push('/(tabs)/badges')} // ← Changed
+            onPress={() => router.push('/(tabs)/badges')}
             style={[styles.actionItem, { borderBottomColor: theme.borderLight }]}
           >
             <View style={styles.actionLeft}>
               <View style={[styles.actionIconBox, { backgroundColor: theme.primaryLight }]}>
                 <Icon name="award" size={20} color={theme.primary} />
               </View>
-              <Text style={[styles.actionText, { color: theme.text }]}>My Badges</Text>
+              <Text style={[styles.actionText, { color: theme.text, fontFamily: Fonts.body }]}>
+                My Badges
+              </Text>
             </View>
             <Icon name="chevron-right" size={20} color={theme.textTertiary} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push('/(tabs)/progress')} // ← Changed
+            onPress={() => router.push('/(tabs)/progress')}
             style={styles.actionItem}
           >
             <View style={styles.actionLeft}>
-              <View style={[styles.actionIconBox, { backgroundColor: theme.secondaryLight }]}>
-                <Icon name="trending-up" size={20} color={theme.secondary} />
+              <View style={[styles.actionIconBox, { backgroundColor: theme.successLight }]}>
+                <Icon name="trending-up" size={20} color={theme.success} />
               </View>
-              <Text style={[styles.actionText, { color: theme.text }]}>My Progress</Text>
+              <Text style={[styles.actionText, { color: theme.text, fontFamily: Fonts.body }]}>
+                My Progress
+              </Text>
             </View>
             <Icon name="chevron-right" size={20} color={theme.textTertiary} />
           </TouchableOpacity>
@@ -202,7 +244,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: fontSize['3xl'],
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.extrabold,
   },
   subtitle: {
     marginTop: spacing.xs,
@@ -219,15 +261,11 @@ const styles = StyleSheet.create({
   challengeCard: {
     marginBottom: spacing.lg,
   },
-  challengeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
   challengeTitle: {
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
+    marginBottom: spacing.md,
+    marginTop: spacing.sm,
   },
   activeBadge: {
     paddingHorizontal: spacing.md,
@@ -235,7 +273,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
   },
   badgeText: {
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.bold,
     fontSize: fontSize.xs,
   },
   progressSection: {
@@ -272,6 +310,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     marginTop: spacing.md,
     textAlign: 'center',
+    fontWeight: fontWeight.bold,
   },
   emptySubtitle: {
     fontSize: fontSize.sm,
@@ -328,7 +367,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   actionText: {
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.bold,
   },
 });
 

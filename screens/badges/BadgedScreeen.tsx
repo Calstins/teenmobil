@@ -14,7 +14,7 @@ import { Loading } from '../../components/common/Loading';
 import { badgeApi } from '../../api/badgeApi';
 import { BadgeStatus } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
-import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import { spacing, fontSize, fontWeight, borderRadius, Fonts } from '../../theme';
 
 export const BadgesScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -49,9 +49,9 @@ export const BadgesScreen: React.FC = () => {
   const getBadgeStatusColor = (status: BadgeStatus) => {
     switch (status) {
       case 'EARNED':
-        return { bg: theme.secondaryLight, text: theme.secondary, label: 'Earned' };
+        return { bg: theme.successLight, text: theme.success, label: 'Earned' };
       case 'PURCHASED':
-        return { bg: theme.accentLight, text: theme.accent, label: 'Purchased' };
+        return { bg: theme.primaryLight, text: theme.primary, label: 'Purchased' };
       default:
         return { bg: theme.backgroundSecondary, text: theme.textSecondary, label: 'Available' };
     }
@@ -68,8 +68,10 @@ export const BadgesScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: theme.backgroundSecondary }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
-        <Text style={[styles.headerTitle, { color: theme.textInverse }]}>My Badges</Text>
-        <Text style={[styles.headerSubtitle, { color: theme.primaryLight }]}>
+        <Text style={[styles.headerTitle, { color: theme.textInverse, fontFamily: Fonts.header }]}>
+          My Badges
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: theme.primaryLight, fontFamily: Fonts.body }]}>
           Collect them all!
         </Text>
       </View>
@@ -79,18 +81,30 @@ export const BadgesScreen: React.FC = () => {
         <Card variant="elevated">
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.secondary }]}>{earnedCount}</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Earned</Text>
+              <Text style={[styles.statValue, { color: theme.success, fontFamily: Fonts.body }]}>
+                {earnedCount}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                Earned
+              </Text>
             </View>
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.accent }]}>{purchasedCount}</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Purchased</Text>
+              <Text style={[styles.statValue, { color: theme.primary, fontFamily: Fonts.body }]}>
+                {purchasedCount}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                Purchased
+              </Text>
             </View>
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.primary }]}>{badges.length}</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total</Text>
+              <Text style={[styles.statValue, { color: theme.secondary, fontFamily: Fonts.body }]}>
+                {badges.length}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                Total
+              </Text>
             </View>
           </View>
         </Card>
@@ -104,8 +118,10 @@ export const BadgesScreen: React.FC = () => {
         {badges.length === 0 ? (
           <View style={styles.emptyState}>
             <Icon name="award" size={64} color={theme.borderLight} />
-            <Text style={[styles.emptyTitle, { color: theme.textSecondary }]}>No badges yet</Text>
-            <Text style={[styles.emptySubtitle, { color: theme.textTertiary }]}>
+            <Text style={[styles.emptyTitle, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+              No badges yet
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: theme.textTertiary, fontFamily: Fonts.body }]}>
               Complete challenges to earn badges!
             </Text>
           </View>
@@ -119,22 +135,22 @@ export const BadgesScreen: React.FC = () => {
                     <View style={[styles.badgeIcon, { backgroundColor: statusColor.bg }]}>
                       <Icon name="award" size={40} color={theme.primary} />
                     </View>
-                    <Text style={[styles.badgeName, { color: theme.text }]}>
+                    <Text style={[styles.badgeName, { color: theme.text, fontFamily: Fonts.body }]}>
                       {badgeItem.badge.name}
                     </Text>
                     <Text
-                      style={[styles.badgeDescription, { color: theme.textSecondary }]}
+                      style={[styles.badgeDescription, { color: theme.textSecondary, fontFamily: Fonts.body }]}
                       numberOfLines={2}
                     >
                       {badgeItem.badge.description}
                     </Text>
                     <View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
-                      <Text style={[styles.statusText, { color: statusColor.text }]}>
+                      <Text style={[styles.statusText, { color: statusColor.text, fontFamily: Fonts.body }]}>
                         {statusColor.label}
                       </Text>
                     </View>
                     {badgeItem.earnedAt && (
-                      <Text style={[styles.earnedDate, { color: theme.textTertiary }]}>
+                      <Text style={[styles.earnedDate, { color: theme.textTertiary, fontFamily: Fonts.body }]}>
                         {new Date(badgeItem.earnedAt).toLocaleDateString()}
                       </Text>
                     )}
@@ -162,7 +178,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: fontSize['3xl'],
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.extrabold,
   },
   headerSubtitle: {
     marginTop: spacing.sm,
@@ -204,6 +220,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
     marginTop: spacing.md,
   },
   emptySubtitle: {

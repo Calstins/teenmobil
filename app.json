@@ -1,18 +1,19 @@
 {
   "expo": {
-    "name": "teenshapersapp",
-    "slug": "teenshapersapp",
+    "name": "teenshapers",
+    "slug": "teenshapers",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "teenshapersapp",
+    "scheme": "teenshapers",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "TeenShapers needs access to your photo library to set your profile picture.",
-        "NSCameraUsageDescription": "TeenShapers needs access to your camera to take your profile picture."
+        "NSCameraUsageDescription": "TeenShapers needs access to your camera to take your profile picture.",
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
@@ -22,12 +23,14 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "useNextNotificationsApi": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -54,11 +57,32 @@
           "photosPermission": "The app needs access to your photos to set a profile picture.",
           "cameraPermission": "The app needs access to your camera to take a profile picture."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff",
+          "sounds": ["./assets/notification.wav"]
+        }
       ]
+      // [
+      //   "expo-linking",
+      //   {
+      //     "schemes": ["teenshapers"]
+      //   }
+      // ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cf070a22-e935-4325-9699-3f80b735dff3"
+      }
+    },
+    "owner": "calstech"
   }
 }

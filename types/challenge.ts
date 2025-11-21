@@ -1,5 +1,3 @@
-
-// src/types/challenge.ts
 export interface Challenge {
   id: string;
   year: number;
@@ -12,6 +10,9 @@ export interface Challenge {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  rank: number;
+  percentage: number;
+  ahead_of_percentage: number;
 }
 
 export interface TeenProgress {
@@ -68,57 +69,93 @@ export interface TeenBadge {
   };
 }
 
-/**
- * Minimal TaskWithSubmission type used in ChallengeDetail.tasks.
- * Expand fields as needed by other parts of the codebase.
- */
 export interface TaskWithSubmission {
   id: string;
   title: string;
   description?: string;
   tabName?: string;
-  // array of submission objects; keep flexible to avoid tight coupling
-  submissions?: Array<{
-    id: string;
-    teenId?: string;
-    submittedAt?: string;
-    status?: string;
-    [key: string]: any;
-  }>;
+  submissions?: Array<any>;
   [key: string]: any;
 }
 
 export interface ChallengeDetail {
   challenge: Challenge;
-  tasks: Record<string, TaskWithSubmission[]>;
+  tasks: Record<string, TaskWithSubmission>;
   badge: BadgeWithStatus;
   progress: TeenProgress;
 }
+
+// ============================================
+// COMMUNITY & LEADERBOARD TYPES
+// ============================================
 
 export interface LeaderboardEntry {
   rank: number;
   teen: {
     name: string;
-    profilePhoto?: string;
+    profilePhoto: string | null;
   };
   percentage: number;
   tasksCompleted: number;
-  completedAt?: string;
+  tasksTotal: number;
+  completedAt: string | null;
 }
 
 export interface CommunityStats {
   totalParticipants: number;
-  completionStats: Record<string, number>;
+  completionStats: {
+    [key: string]: number;
+  };
   teenRanking: {
     percentage: number;
     ahead_of_percentage: number;
+    rank: number;
+    total: number;
   } | null;
-  popularTasks: Array<{
+  popularTasks: Array<any>;
+  challenge?: {
     id: string;
+    theme: string;
+    month: number;
+    year: number;
+  };
+}
+
+export interface RecentActivity {
+  id: string;
+  type:
+    | 'CHALLENGE_COMPLETED'
+    | 'BADGE_EARNED'
+    | 'TASK_SUBMITTED'
+    | 'HIGH_PERFORMER';
+  teen: {
+    name: string;
+    profilePhoto: string | null;
+  };
+  challenge?: {
+    theme: string;
+    month: number;
+    year: number;
+  };
+  badge?: {
+    name: string;
+    imageUrl: string;
+  };
+  task?: {
     title: string;
-    tabName: string;
-    submissions: number;
-  }>;
+  };
+  timestamp: string;
+  message: string;
+}
+
+export interface TopPerformer {
+  teen: {
+    name: string;
+    profilePhoto: string | null;
+  };
+  completedChallenges: number;
+  earnedBadges: number;
+  averageProgress: number;
 }
 
 export interface YearlyProgressData {
@@ -130,4 +167,3 @@ export interface YearlyProgressData {
     averagePercentage: number;
   };
 }
-

@@ -2,6 +2,7 @@
 export * from './auth';
 export * from './challenge';
 export { Task, TaskType } from './task';
+export * from './';
 
 export interface ApiResponse<T = any> {
   success: boolean;
