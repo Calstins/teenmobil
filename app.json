@@ -10,10 +10,17 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.calstech.teenshapers",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "TeenShapers needs access to your photo library to set your profile picture.",
         "NSCameraUsageDescription": "TeenShapers needs access to your camera to take your profile picture.",
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": ["remote-notification"],
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["teenshapers"],
+            "CFBundleURLName": "com.calstech.teenshapers"
+          }
+        ]
       }
     },
     "android": {
@@ -31,6 +38,24 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.calstech.teenshapers",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "teenshaper.vercel.app",
+              "pathPrefix": "/payment/callback"
+            },
+            {
+              "scheme": "teenshapers"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {
@@ -66,12 +91,6 @@
           "sounds": ["./assets/notification.wav"]
         }
       ]
-      // [
-      //   "expo-linking",
-      //   {
-      //     "schemes": ["teenshapers"]
-      //   }
-      // ]
     ],
     "experiments": {
       "typedRoutes": true,

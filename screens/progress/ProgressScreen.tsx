@@ -1,4 +1,4 @@
-// src/screens/progress/ProgressScreen.tsx
+// src/screens/progress/ProgressScreen.tsx - UPDATED WITH NAVIGATION
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { Card } from '../../components/common/Card';
@@ -14,7 +15,7 @@ import { Loading } from '../../components/common/Loading';
 import { progressApi } from '../../api/progressApi';
 import { useTheme } from '../../context/ThemeContext';
 import { useRouter } from 'expo-router';
-import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import { spacing, fontSize, fontWeight, borderRadius, Fonts } from '../../theme';
 
 export const ProgressScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -49,20 +50,21 @@ export const ProgressScreen: React.FC = () => {
 
   const getMonthName = (month: number) => {
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     return months[month - 1];
+  };
+
+  // ✅ NEW: Handle navigation to challenge detail
+  const handleChallengePress = (item: any) => {
+    if (!item.challenge || !item.challenge.id) {
+      Alert.alert('Error', 'Challenge information not available');
+      return;
+    }
+
+    // Navigate to challenge detail screen
+    router.push(`/challenge/${item.challenge.id}` as any);
   };
 
   if (isLoading) {
@@ -73,8 +75,10 @@ export const ProgressScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: theme.backgroundSecondary }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
-        <Text style={[styles.headerTitle, { color: theme.textInverse }]}>My Progress</Text>
-        <Text style={[styles.headerSubtitle, { color: theme.primaryLight }]}>
+        <Text style={[styles.headerTitle, { color: theme.textInverse, fontFamily: Fonts.header }]}>
+          My Progress
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: theme.primaryLight, fontFamily: Fonts.body }]}>
           Track your journey
         </Text>
       </View>
@@ -84,24 +88,30 @@ export const ProgressScreen: React.FC = () => {
         <Card variant="elevated">
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.primary }]}>
+              <Text style={[styles.statValue, { color: theme.primary, fontFamily: Fonts.body }]}>
                 {yearlyData?.stats.completedChallenges || 0}
               </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Completed</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                Completed
+              </Text>
             </View>
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.secondary }]}>
+              <Text style={[styles.statValue, { color: theme.secondary, fontFamily: Fonts.body }]}>
                 {yearlyData?.stats.totalChallenges || 0}
               </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                Total
+              </Text>
             </View>
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.accent }]}>
+              <Text style={[styles.statValue, { color: theme.accent, fontFamily: Fonts.body }]}>
                 {Math.round(yearlyData?.stats.averagePercentage || 0)}%
               </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Average</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                Average
+              </Text>
             </View>
           </View>
         </Card>
@@ -112,83 +122,100 @@ export const ProgressScreen: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Monthly Progress</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text, fontFamily: Fonts.header }]}>
+          Monthly Progress
+        </Text>
 
         {yearlyData?.progress.length === 0 ? (
           <View style={styles.emptyState}>
             <Icon name="trending-up" size={64} color={theme.borderLight} />
-            <Text style={[styles.emptyTitle, { color: theme.textSecondary }]}>
+            <Text style={[styles.emptyTitle, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
               No progress yet
             </Text>
-            <Text style={[styles.emptySubtitle, { color: theme.textTertiary }]}>
+            <Text style={[styles.emptySubtitle, { color: theme.textTertiary, fontFamily: Fonts.body }]}>
               Start completing challenges!
             </Text>
           </View>
         ) : (
           yearlyData?.progress.map((item: any) => (
+            <TouchableOpacity
+              key={item.id}
+              onPress={() => handleChallengePress(item)}
+              activeOpacity={0.7}
+            >
+              <Card style={styles.progressCard}>
+                <View style={styles.progressHeader}>
+                  <View style={styles.progressHeaderLeft}>
+                    <Text style={[styles.progressMonth, { color: theme.text, fontFamily: Fonts.body }]}>
+                      {getMonthName(item.challenge.month)} {item.challenge.year}
+                    </Text>
+                    <Text style={[styles.progressTheme, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                      {item.challenge.theme}
+                    </Text>
+                  </View>
+                  <View style={styles.progressHeaderRight}>
+                    {item.percentage === 100 && (
+                      <View style={[styles.completeBadge, { backgroundColor: theme.secondaryLight }]}>
+                        <Icon name="check-circle" size={24} color={theme.secondary} />
+                      </View>
+                    )}
 
-            <Card style={styles.progressCard} key={item.id}>
-              <View style={styles.progressHeader}>
-                <View>
-                  <Text style={[styles.progressMonth, { color: theme.text }]}>
-                    {getMonthName(item.challenge.month)} {item.challenge.year}
-                  </Text>
-                  <Text style={[styles.progressTheme, { color: theme.textSecondary }]}>
-                    {item.challenge.theme}
-                  </Text>
+                    <Icon name="chevron-right" size={20} color={theme.textTertiary} style={styles.chevron} />
+                  </View>
                 </View>
-                <View style={styles.progressHeaderRight}>
-                  {item.percentage === 100 && (
-                    <View style={[styles.completeBadge, { backgroundColor: theme.secondaryLight }]}>
-                      <Icon name="check-circle" size={24} color={theme.secondary} />
-                    </View>
-                  )}
-                  {/* <Icon name="chevron-right" size={20} color={theme.textTertiary} style={styles.chevron} /> */}
-                </View>
-              </View>
 
-              <View style={styles.progressBarSection}>
-                <View style={styles.progressBarHeader}>
-                  <Text style={[styles.progressLabel, { color: theme.textSecondary }]}>
-                    Progress
-                  </Text>
-                  <Text style={[styles.progressPercentage, { color: theme.primary }]}>
-                    {Math.round(item.percentage)}%
-                  </Text>
-                </View>
-                <View
-                  style={[styles.progressBarContainer, { backgroundColor: theme.backgroundSecondary }]}
-                >
+                <View style={styles.progressBarSection}>
+                  <View style={styles.progressBarHeader}>
+                    <Text style={[styles.progressLabel, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                      Progress
+                    </Text>
+                    <Text style={[styles.progressPercentage, { color: theme.primary, fontFamily: Fonts.body }]}>
+                      {Math.round(item.percentage)}%
+                    </Text>
+                  </View>
                   <View
-                    style={[
-                      styles.progressBarFill,
-                      {
-                        backgroundColor: theme.primary,
-                        width: `${item.percentage}%`,
-                      },
-                    ]}
-                  />
+                    style={[styles.progressBarContainer, { backgroundColor: theme.backgroundSecondary }]}
+                  >
+                    <View
+                      style={[
+                        styles.progressBarFill,
+                        {
+                          backgroundColor: theme.primary,
+                          width: `${item.percentage}%`,
+                        },
+                      ]}
+                    />
+                  </View>
                 </View>
-              </View>
 
-              <Text style={[styles.tasksCompleted, { color: theme.textTertiary }]}>
-                {item.tasksCompleted} of {item.tasksTotal} tasks completed
-              </Text>
+                <Text style={[styles.tasksCompleted, { color: theme.textTertiary, fontFamily: Fonts.body }]}>
+                  {item.tasksCompleted} of {item.tasksTotal} tasks completed
+                </Text>
 
-              {item.completedAt && (
-                <View style={styles.completedRow}>
-                  <Icon name="calendar" size={12} color={theme.textTertiary} />
-                  <Text style={[styles.completedText, { color: theme.textTertiary }]}>
-                    Completed: {new Date(item.completedAt).toLocaleDateString()}
-                  </Text>
-                </View>
-              )}
-            </Card>
+                {item.completedAt && (
+                  <View style={styles.completedRow}>
+                    <Icon name="calendar" size={12} color={theme.textTertiary} />
+                    <Text style={[styles.completedText, { color: theme.textTertiary, fontFamily: Fonts.body }]}>
+                      Completed: {new Date(item.completedAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                )}
 
+                {/* ✅ NEW: Tap hint for incomplete challenges */}
+                {item.percentage < 100 && (
+                  <View style={[styles.tapHint, { backgroundColor: theme.primaryLight }]}>
+                    <Icon name="target" size={14} color={theme.primary} />
+                    <Text style={[styles.tapHintText, { color: theme.primary, fontFamily: Fonts.body }]}>
+                      Tap to complete remaining tasks
+                    </Text>
+                  </View>
+                )}
+              </Card>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
-    </View >
+    </View>
   );
 };
 
@@ -239,6 +266,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   sectionTitle: {
     fontSize: fontSize.xl,
@@ -266,6 +294,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
+  },
+  progressHeaderLeft: {
+    flex: 1,
   },
   progressHeaderRight: {
     flexDirection: 'row',
@@ -320,5 +351,19 @@ const styles = StyleSheet.create({
   },
   chevron: {
     marginLeft: spacing.sm,
+  },
+
+  tapHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.md,
+    gap: spacing.xs,
+  },
+  tapHintText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
   },
 });

@@ -1,4 +1,4 @@
-// screens/auth/ProfileSetupScreen.tsx
+// screens/auth/ProfileSetupScreen.tsx - WITH REQUIRED COUNTRY
 import { useRouter } from 'expo-router';
 import React, { useState, useContext, useMemo } from 'react';
 import {
@@ -41,7 +41,7 @@ export const ProfileSetupScreen = () => {
   const [isNavigating, setIsNavigating] = useState(false);
 
   // Location state
-  const [selectedCountryCode, setSelectedCountryCode] = useState('NG'); // Default to Nigeria
+  const [selectedCountryCode, setSelectedCountryCode] = useState('NG');
   const [selectedCountryName, setSelectedCountryName] = useState('Nigeria');
   const [selectedState, setSelectedState] = useState('');
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -169,9 +169,7 @@ export const ProfileSetupScreen = () => {
       });
 
       if (response.success && response.data) {
-        // Update user in context with fresh data from API
         const updatedUser = { ...user, profilePhoto: photoUrl };
-        // Store updated user data
         await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
         await refreshUser();
         console.log('✅ Profile photo updated in backend');
@@ -219,7 +217,6 @@ export const ProfileSetupScreen = () => {
         const detectedCountry = address.country || 'Nigeria';
         const detectedState = address.region || address.city || '';
 
-        // Find matching country
         const matchedCountry = allCountries.find(
           c => c.name.toLowerCase() === detectedCountry.toLowerCase()
         );
@@ -228,7 +225,6 @@ export const ProfileSetupScreen = () => {
           setSelectedCountryCode(matchedCountry.code);
           setSelectedCountryName(matchedCountry.name);
 
-          // Find matching state
           const countryStates = State.getStatesOfCountry(matchedCountry.code);
           const matchedState = countryStates.find(
             s => s.name.toLowerCase() === detectedState.toLowerCase()
@@ -254,7 +250,7 @@ export const ProfileSetupScreen = () => {
 
   const handleSaveLocation = async () => {
     if (!selectedCountryName || !selectedState) {
-      Alert.alert('Required', 'Please select both country and state/region');
+      Alert.alert('Required Fields', 'Please select both country and state/region to continue');
       return;
     }
 
@@ -270,9 +266,7 @@ export const ProfileSetupScreen = () => {
       });
 
       if (response.success && response.data) {
-        // Update user in context with fresh data from API
         const updatedUser = { ...user!, state, country, needsProfileSetup: false };
-        // Store updated user data
         await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
         await refreshUser();
         console.log('✅ Location updated in backend');
@@ -307,29 +301,32 @@ export const ProfileSetupScreen = () => {
     console.log('🏠 Navigating to home...');
 
     try {
-      // Mark profile setup as complete in AsyncStorage
       if (user) {
         const updatedUser = { ...user, needsProfileSetup: false };
         await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
         console.log('✅ Profile marked as complete');
       }
 
-      // Refresh user data to trigger context update
       await refreshUser();
-
-      // Small delay to ensure context updates
       await new Promise(resolve => setTimeout(resolve, 200));
-
-      // Navigate to home with replace to prevent back navigation
       router.replace('/(tabs)/home');
     } catch (error) {
       console.error('❌ Navigation error:', error);
-      // Fallback navigation
       router.replace('/(tabs)/home');
     }
   };
 
   const handleSkip = () => {
+    // ✅ UPDATED: Don't allow skipping location step (step 2) since country is required
+    if (step === 2) {
+      Alert.alert(
+        'Location Required',
+        'Please set your location to continue. You can use auto-detect or select manually.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     if (step < 3) {
       setStep(step + 1);
     } else {
@@ -339,6 +336,15 @@ export const ProfileSetupScreen = () => {
 
   const handleNext = () => {
     if (isNavigating) return;
+
+    if (step === 2 && !locationSet) {
+      Alert.alert(
+        'Location Required',
+        'Please save your location before continuing',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
 
     if (step < 3) {
       setStep(step + 1);
@@ -371,7 +377,6 @@ export const ProfileSetupScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Search Input */}
           <View style={[styles.searchContainer, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
             <Icon name="search" size={20} color={theme.textSecondary} />
             <TextInput
@@ -402,7 +407,7 @@ export const ProfileSetupScreen = () => {
                 onPress={() => {
                   setSelectedCountryCode(item.code);
                   setSelectedCountryName(item.name);
-                  setSelectedState(''); // Reset state when country changes
+                  setSelectedState('');
                   setShowCountryPicker(false);
                   setCountrySearchQuery('');
                 }}
@@ -455,7 +460,6 @@ export const ProfileSetupScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Search Input */}
           <View style={[styles.searchContainer, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
             <Icon name="search" size={20} color={theme.textSecondary} />
             <TextInput
@@ -608,6 +612,9 @@ export const ProfileSetupScreen = () => {
             <Text style={[styles.stepDescription, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
               Help us customize your experience and connect you with teens in your area
             </Text>
+            <Text style={[styles.requiredNote, { color: theme.error, fontFamily: Fonts.body }]}>
+              * Country and State are required
+            </Text>
 
             {/* Country Selector */}
             <TouchableOpacity
@@ -616,7 +623,7 @@ export const ProfileSetupScreen = () => {
             >
               <Icon name="globe" size={20} color={theme.primary} />
               <Text style={[styles.locationInputText, { color: selectedCountryName ? theme.text : theme.textSecondary, fontFamily: Fonts.body }]}>
-                {selectedCountryName || 'Select Country'}
+                {selectedCountryName || 'Select Country *'}
               </Text>
               <Icon name="chevron-down" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
@@ -629,7 +636,7 @@ export const ProfileSetupScreen = () => {
             >
               <Icon name="map-pin" size={20} color={theme.primary} />
               <Text style={[styles.locationInputText, { color: selectedState ? theme.text : theme.textSecondary, fontFamily: Fonts.body }]}>
-                {selectedState || (selectedCountryCode ? 'Select State/Region' : 'Select country first')}
+                {selectedState || (selectedCountryCode ? 'Select State/Region *' : 'Select country first')}
               </Text>
               <Icon name="chevron-down" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
@@ -660,12 +667,6 @@ export const ProfileSetupScreen = () => {
                 onPress={() => setLocationSet(false)}
               />
             )}
-
-            <TouchableOpacity onPress={handleSkip}>
-              <Text style={[styles.skipText, { color: theme.textTertiary, fontFamily: Fonts.body }]}>
-                Skip for now
-              </Text>
-            </TouchableOpacity>
           </View>
         );
 
@@ -870,6 +871,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     fontSize: fontSize.base,
     lineHeight: fontSize.base * 1.5,
+  },
+  requiredNote: {
+    fontSize: fontSize.sm,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+    fontWeight: fontWeight.semibold,
   },
   locationInput: {
     flexDirection: 'row',

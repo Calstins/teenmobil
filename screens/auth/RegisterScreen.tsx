@@ -1,6 +1,5 @@
 // screens/auth/RegisterScreen.tsx
-// Multi-step registration with direct Cloudinary upload (NO BASE64)
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,12 +11,16 @@ import {
   Image,
   ActivityIndicator,
   StyleSheet,
+  Modal,
+  FlatList,
+  TextInput,
 } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/Feather';
+import { Country, State } from 'country-state-city';
 import { AuthContext } from '../../context/AuthContext';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
@@ -38,6 +41,8 @@ const Step2Schema = Yup.object().shape({
   confirmPassword: Yup.string()
     .oneOf([Yup.ref('password')], 'Passwords must match')
     .required('Please confirm password'),
+  country: Yup.string().required('Country is required'),
+  state: Yup.string().required('State/Region is required'),
 });
 
 const Step3Schema = Yup.object().shape({
@@ -58,6 +63,14 @@ export const RegisterScreen = () => {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // Location pickers state
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [showStatePicker, setShowStatePicker] = useState(false);
+  const [countrySearchQuery, setCountrySearchQuery] = useState('');
+  const [stateSearchQuery, setStateSearchQuery] = useState('');
+  const [selectedCountryCode, setSelectedCountryCode] = useState('NG'); // Default to Nigeria
+
   const [formData, setFormData] = useState({
     name: '',
     age: '',
@@ -66,11 +79,46 @@ export const RegisterScreen = () => {
     password: '',
     confirmPassword: '',
     state: '',
-    country: '',
+    country: 'Nigeria',
     parentEmail: '',
     agreedToTerms: false,
     parentalConsent: false,
   });
+
+  // Get all countries
+  const allCountries = useMemo(() => {
+    return Country.getAllCountries().map(country => ({
+      code: country.isoCode,
+      name: country.name,
+      flag: country.flag,
+    }));
+  }, []);
+
+  // Get states for selected country
+  const statesForSelectedCountry = useMemo(() => {
+    if (!selectedCountryCode) return [];
+    const states = State.getStatesOfCountry(selectedCountryCode);
+    return states.map(state => ({
+      code: state.isoCode,
+      name: state.name,
+    }));
+  }, [selectedCountryCode]);
+
+  // Filtered countries based on search
+  const filteredCountries = useMemo(() => {
+    if (!countrySearchQuery.trim()) return allCountries;
+    return allCountries.filter(country =>
+      country.name.toLowerCase().includes(countrySearchQuery.toLowerCase())
+    );
+  }, [allCountries, countrySearchQuery]);
+
+  // Filtered states based on search
+  const filteredStates = useMemo(() => {
+    if (!stateSearchQuery.trim()) return statesForSelectedCountry;
+    return statesForSelectedCountry.filter(state =>
+      state.name.toLowerCase().includes(stateSearchQuery.toLowerCase())
+    );
+  }, [statesForSelectedCountry, stateSearchQuery]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -199,12 +247,175 @@ export const RegisterScreen = () => {
     }
   };
 
+  const renderCountryPicker = (props: any) => (
+    <Modal
+      visible={showCountryPicker}
+      transparent
+      animationType="slide"
+      onRequestClose={() => {
+        setShowCountryPicker(false);
+        setCountrySearchQuery('');
+      }}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text, fontFamily: Fonts.header }]}>
+              Select Country
+            </Text>
+            <TouchableOpacity onPress={() => {
+              setShowCountryPicker(false);
+              setCountrySearchQuery('');
+            }}>
+              <Icon name="x" size={24} color={theme.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.searchContainer, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
+            <Icon name="search" size={20} color={theme.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: theme.text, fontFamily: Fonts.body }]}
+              placeholder="Search countries..."
+              placeholderTextColor={theme.textTertiary}
+              value={countrySearchQuery}
+              onChangeText={setCountrySearchQuery}
+              autoCorrect={false}
+            />
+            {countrySearchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setCountrySearchQuery('')}>
+                <Icon name="x-circle" size={20} color={theme.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <FlatList
+            data={filteredCountries}
+            keyExtractor={(item) => item.code}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.pickerItem,
+                  { borderBottomColor: theme.borderLight },
+                  props.values.country === item.name && { backgroundColor: theme.primaryLight }
+                ]}
+                onPress={() => {
+                  setSelectedCountryCode(item.code);
+                  props.setFieldValue('country', item.name);
+                  props.setFieldValue('state', ''); // Reset state when country changes
+                  setFormData({ ...formData, country: item.name, state: '' });
+                  setShowCountryPicker(false);
+                  setCountrySearchQuery('');
+                }}
+              >
+                <View style={styles.countryRow}>
+                  <Text style={styles.countryFlag}>{item.flag}</Text>
+                  <Text style={[styles.pickerItemText, { color: theme.text, fontFamily: Fonts.body }]}>
+                    {item.name}
+                  </Text>
+                </View>
+                {props.values.country === item.name && (
+                  <Icon name="check" size={20} color={theme.primary} />
+                )}
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyList}>
+                <Text style={[styles.emptyText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                  No countries found
+                </Text>
+              </View>
+            }
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const renderStatePicker = (props: any) => (
+    <Modal
+      visible={showStatePicker}
+      transparent
+      animationType="slide"
+      onRequestClose={() => {
+        setShowStatePicker(false);
+        setStateSearchQuery('');
+      }}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text, fontFamily: Fonts.header }]}>
+              Select State/Region
+            </Text>
+            <TouchableOpacity onPress={() => {
+              setShowStatePicker(false);
+              setStateSearchQuery('');
+            }}>
+              <Icon name="x" size={24} color={theme.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.searchContainer, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}>
+            <Icon name="search" size={20} color={theme.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: theme.text, fontFamily: Fonts.body }]}
+              placeholder="Search states..."
+              placeholderTextColor={theme.textTertiary}
+              value={stateSearchQuery}
+              onChangeText={setStateSearchQuery}
+              autoCorrect={false}
+            />
+            {stateSearchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setStateSearchQuery('')}>
+                <Icon name="x-circle" size={20} color={theme.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <FlatList
+            data={filteredStates}
+            keyExtractor={(item) => item.code}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.pickerItem,
+                  { borderBottomColor: theme.borderLight },
+                  props.values.state === item.name && { backgroundColor: theme.primaryLight }
+                ]}
+                onPress={() => {
+                  props.setFieldValue('state', item.name);
+                  setFormData({ ...formData, state: item.name });
+                  setShowStatePicker(false);
+                  setStateSearchQuery('');
+                }}
+              >
+                <Text style={[styles.pickerItemText, { color: theme.text, fontFamily: Fonts.body }]}>
+                  {item.name}
+                </Text>
+                {props.values.state === item.name && (
+                  <Icon name="check" size={20} color={theme.primary} />
+                )}
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyList}>
+                <Text style={[styles.emptyText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                  {stateSearchQuery ? 'No states found' : 'No states available for this country'}
+                </Text>
+              </View>
+            }
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+
   const renderStep1 = (props: any) => (
     <View>
       {/* Profile Image Upload */}
       <View style={styles.imageSection}>
         <Text style={[styles.imageLabel, { color: theme.text, fontFamily: Fonts.body }]}>
-          Profile Photo
+          Profile Photo (Optional)
         </Text>
         <TouchableOpacity
           style={[styles.imagePicker, { borderColor: theme.borderLight }]}
@@ -373,14 +584,71 @@ export const RegisterScreen = () => {
         }
       />
 
-      <Input
-        label="Location (Optional)"
-        placeholder="City, State or Country"
-        icon="map-pin"
-        value={props.values.state}
-        onChangeText={props.handleChange('state')}
-        onBlur={props.handleBlur('state')}
-      />
+      {/* Location Selection */}
+      <View style={styles.locationSection}>
+        <Text style={[styles.label, { color: theme.text, fontFamily: Fonts.body }]}>
+          Location *
+        </Text>
+
+        {/* Country Selector */}
+        <TouchableOpacity
+          style={[
+            styles.locationInput,
+            {
+              backgroundColor: theme.backgroundSecondary,
+              borderColor: props.touched.country && props.errors.country ? theme.error : theme.border
+            }
+          ]}
+          onPress={() => setShowCountryPicker(true)}
+        >
+          <Icon name="globe" size={20} color={theme.primary} />
+          <Text style={[
+            styles.locationInputText,
+            {
+              color: props.values.country ? theme.text : theme.textSecondary,
+              fontFamily: Fonts.body
+            }
+          ]}>
+            {props.values.country || 'Select Country'}
+          </Text>
+          <Icon name="chevron-down" size={20} color={theme.textSecondary} />
+        </TouchableOpacity>
+        {props.touched.country && props.errors.country && (
+          <Text style={[styles.errorText, { color: theme.error, fontFamily: Fonts.body }]}>
+            {props.errors.country}
+          </Text>
+        )}
+
+        {/* State Selector */}
+        <TouchableOpacity
+          style={[
+            styles.locationInput,
+            {
+              backgroundColor: theme.backgroundSecondary,
+              borderColor: props.touched.state && props.errors.state ? theme.error : theme.border
+            }
+          ]}
+          onPress={() => setShowStatePicker(true)}
+          disabled={!props.values.country}
+        >
+          <Icon name="map-pin" size={20} color={theme.primary} />
+          <Text style={[
+            styles.locationInputText,
+            {
+              color: props.values.state ? theme.text : theme.textSecondary,
+              fontFamily: Fonts.body
+            }
+          ]}>
+            {props.values.state || (props.values.country ? 'Select State/Region' : 'Select country first')}
+          </Text>
+          <Icon name="chevron-down" size={20} color={theme.textSecondary} />
+        </TouchableOpacity>
+        {props.touched.state && props.errors.state && (
+          <Text style={[styles.errorText, { color: theme.error, fontFamily: Fonts.body }]}>
+            {props.errors.state}
+          </Text>
+        )}
+      </View>
     </View>
   );
 
@@ -521,6 +789,14 @@ export const RegisterScreen = () => {
                   style={[styles.button, currentStep === 1 && styles.fullButton]}
                 />
               </View>
+
+              {/* Render Modals */}
+              {currentStep === 2 && (
+                <>
+                  {renderCountryPicker(props)}
+                  {renderStatePicker(props)}
+                </>
+              )}
             </View>
           )}
         </Formik>
@@ -549,14 +825,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
   },
   header: {
-    marginTop: spacing.xxl,
-    marginBottom: spacing.md,
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: fontSize['4xl'],
+    fontSize: fontSize['3xl'],
     fontWeight: fontWeight.extrabold,
   },
   subtitle: {
@@ -565,8 +841,8 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     flexDirection: 'row',
-    gap: spacing.sm,
     marginBottom: spacing.xl,
+    gap: spacing.sm,
   },
   progressBar: {
     flex: 1,
@@ -579,8 +855,7 @@ const styles = StyleSheet.create({
   },
   imageLabel: {
     fontSize: fontSize.base,
-    fontWeight: fontWeight.medium,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   imagePicker: {
     width: 120,
@@ -597,13 +872,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  profileImage: {
-    width: '100%',
-    height: '100%',
-  },
   imageText: {
     marginTop: spacing.xs,
     fontSize: fontSize.sm,
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
   },
   uploadSuccessBadge: {
     position: 'absolute',
@@ -613,17 +888,17 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   uploadedText: {
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-  genderSection: {
-    marginBottom: spacing.lg,
+    fontWeight: fontWeight.semibold,
   },
   label: {
     fontSize: fontSize.base,
-    fontWeight: fontWeight.medium,
-    marginBottom: spacing.sm,
+    fontWeight: fontWeight.semibold,
+    marginBottom: spacing.md,
+  },
+  genderSection: {
+    marginBottom: spacing.lg,
   },
   genderOptions: {
     flexDirection: 'row',
@@ -634,33 +909,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    padding: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.lg,
     borderWidth: 2,
+    gap: spacing.sm,
   },
   genderText: {
     fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.semibold,
+  },
+  locationSection: {
+    marginBottom: spacing.lg,
+  },
+  locationInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+  },
+  locationInputText: {
+    flex: 1,
+    marginLeft: spacing.md,
+    fontSize: fontSize.base,
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: borderRadius.sm,
     borderWidth: 2,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.sm,
+    justifyContent: 'center',
+    marginRight: spacing.md,
+    marginTop: 2,
   },
   checkboxLabel: {
     flex: 1,
     fontSize: fontSize.sm,
-    lineHeight: 20,
+    lineHeight: fontSize.sm * 1.5,
   },
   errorText: {
     fontSize: fontSize.sm,
@@ -676,20 +970,82 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fullButton: {
-    flex: 1,
+    width: '100%',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: spacing.lg,
+    alignItems: 'center',
+    marginTop: spacing.xl,
   },
   footerText: {
     fontSize: fontSize.base,
   },
   footerLink: {
+    fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: spacing.sm,
+    fontSize: fontSize.base,
+    paddingVertical: spacing.xs,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+  },
+  pickerItemText: {
+    fontSize: fontSize.base,
+  },
+  countryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  countryFlag: {
+    fontSize: fontSize.xl,
+    marginRight: spacing.sm,
+  },
+  emptyList: {
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  emptyText: {
     fontSize: fontSize.base,
   },
 });
-
-export default RegisterScreen;

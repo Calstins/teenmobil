@@ -1,4 +1,4 @@
-// app/challenge/[id].tsx
+// app/challenge/[id].tsx 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -9,7 +9,7 @@ import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { Loading } from '../../components/common/Loading';
 import { useTheme } from '../../context/ThemeContext';
-import { borderRadius, fontSize, fontWeight, spacing } from '../../theme';
+import { borderRadius, fontSize, fontWeight, spacing, Fonts } from '../../theme';
 import { ChallengeDetail } from '../../types';
 
 export default function ChallengeDetailScreen() {
@@ -53,20 +53,35 @@ export default function ChallengeDetailScreen() {
 
     const handlePurchaseBadge = async () => {
         if (!challengeData?.badge) return;
+
+        // ✅ NEW: Show different message for past challenges
+        const isPast = Boolean((challengeData?.challenge as any)?.isPastChallenge);
+        const warningMessage = isPast
+            ? `This challenge has ended. Purchase ${challengeData.badge.name} for ₦${challengeData.badge.price}? This will be marked as a late purchase.`
+            : `Purchase ${challengeData.badge.name} for ₦${challengeData.badge.price}?`;
+
         Alert.alert(
             'Purchase Badge',
-            `Purchase ${challengeData.badge.name} for $${challengeData.badge.price}?`,
+            warningMessage,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Purchase',
                     onPress: async () => {
                         try {
-                            await badgeApi.purchaseBadge(challengeData.badge.id);
-                            Alert.alert('Success', 'Badge purchased successfully!');
+                            const result = await badgeApi.initializeBadgePurchase(challengeData.badge.id);
+                            if (result.success && result.data?.authorization_url) {
+                                Alert.alert(
+                                    'Payment Initialized',
+                                    'A payment link has been generated; please complete the payment to finish purchasing the badge.'
+                                );
+                                // Optionally open the returned authorization_url in a browser/webview here
+                            } else {
+                                Alert.alert('Success', 'Badge purchase initialized. You will be notified once payment is verified.');
+                            }
                             fetchChallenge();
                         } catch (error: any) {
-                            Alert.alert('Error', error.message || 'Failed to purchase badge');
+                            Alert.alert('Error', error.message || 'Failed to initialize badge purchase');
                         }
                     },
                 },
@@ -80,7 +95,7 @@ export default function ChallengeDetailScreen() {
         return (
             <View style={[styles.emptyContainer, { backgroundColor: theme.background }]}>
                 <Icon name="calendar" size={64} color={theme.borderLight} />
-                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                <Text style={[styles.emptyText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
                     Challenge not found
                 </Text>
                 <Button
@@ -93,6 +108,7 @@ export default function ChallengeDetailScreen() {
     }
 
     const tabs = Object.keys(challengeData.tasks);
+    const isPastChallenge = Boolean((challengeData.challenge as any)?.isPastChallenge);
 
     return (
         <View style={[styles.container, { backgroundColor: theme.backgroundSecondary }]}>
@@ -102,10 +118,10 @@ export default function ChallengeDetailScreen() {
                     <Icon name="arrow-left" size={24} color={theme.textInverse} />
                 </TouchableOpacity>
                 <View style={styles.headerContent}>
-                    <Text style={[styles.headerTitle, { color: theme.textInverse }]}>
+                    <Text style={[styles.headerTitle, { color: theme.textInverse, fontFamily: Fonts.header }]}>
                         {challengeData.challenge.theme}
                     </Text>
-                    <Text style={[styles.headerSubtitle, { color: theme.primaryLight }]}>
+                    <Text style={[styles.headerSubtitle, { color: theme.primaryLight, fontFamily: Fonts.body }]}>
                         {challengeData.challenge.instructions}
                     </Text>
                 </View>
@@ -113,11 +129,31 @@ export default function ChallengeDetailScreen() {
 
             <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
                 <View style={styles.content}>
+                    {/* ✅ NEW: Past Challenge Warning */}
+                    {isPastChallenge && (
+                        <Card style={[styles.warningCard, { backgroundColor: theme.warningLight }]}>
+                            <View style={styles.warningRow}>
+                                <Icon name="clock" size={20} color={theme.warning} />
+                                <View style={styles.warningText}>
+                                    <Text style={[styles.warningTitle, { color: theme.warning, fontFamily: Fonts.body }]}>
+                                        Past Challenge
+                                    </Text>
+                                    <Text style={[styles.warningSubtitle, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                                        This challenge has ended. You can still complete tasks and purchase the badge,
+                                        but it will be marked as completed after the deadline.
+                                    </Text>
+                                </View>
+                            </View>
+                        </Card>
+                    )}
+
                     {/* Progress Card */}
                     <Card variant="elevated" style={styles.progressCard}>
                         <View style={styles.progressHeader}>
-                            <Text style={[styles.progressTitle, { color: theme.text }]}>Your Progress</Text>
-                            <Text style={[styles.progressPercentage, { color: theme.primary }]}>
+                            <Text style={[styles.progressTitle, { color: theme.text, fontFamily: Fonts.body }]}>
+                                Your Progress
+                            </Text>
+                            <Text style={[styles.progressPercentage, { color: theme.primary, fontFamily: Fonts.body }]}>
                                 {Math.round(challengeData.progress.percentage)}%
                             </Text>
                         </View>
@@ -132,7 +168,7 @@ export default function ChallengeDetailScreen() {
                                 ]}
                             />
                         </View>
-                        <Text style={[styles.progressStats, { color: theme.textSecondary }]}>
+                        <Text style={[styles.progressStats, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
                             {challengeData.progress.tasksCompleted} of {challengeData.progress.tasksTotal} tasks completed
                         </Text>
                     </Card>
@@ -145,25 +181,33 @@ export default function ChallengeDetailScreen() {
                                     <Icon name="award" size={32} color={theme.primary} />
                                 </View>
                                 <View style={styles.badgeInfo}>
-                                    <Text style={[styles.badgeName, { color: theme.text }]}>
+                                    <Text style={[styles.badgeName, { color: theme.text, fontFamily: Fonts.body }]}>
                                         {challengeData.badge.name}
                                     </Text>
-                                    <Text style={[styles.badgeDescription, { color: theme.textSecondary }]}>
+                                    <Text style={[styles.badgeDescription, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
                                         {challengeData.badge.description}
                                     </Text>
-                                    <Text style={[styles.badgePrice, { color: theme.primary }]}>
-                                        ${challengeData.badge.price}
+                                    <Text style={[styles.badgePrice, { color: theme.primary, fontFamily: Fonts.body }]}>
+                                        ₦{challengeData.badge.price}
                                     </Text>
                                 </View>
                             </View>
-                            {challengeData.badge.status === 'AVAILABLE' && (
+                            {challengeData.badge.status !== 'PURCHASED' && (
                                 <Button
-                                    title="Purchase Badge"
+                                    title={isPastChallenge ? "Purchase Badge (Late)" : "Purchase Badge"}
                                     onPress={handlePurchaseBadge}
                                     variant="primary"
                                     size="sm"
                                     style={styles.purchaseButton}
                                 />
+                            )}
+                            {challengeData.badge.status === 'PURCHASED' && (
+                                <View style={[styles.badgeStatus, { backgroundColor: theme.primaryLight }]}>
+                                    <Icon name="check-circle" size={16} color={theme.primary} />
+                                    <Text style={[styles.badgeStatusText, { color: theme.primary, fontFamily: Fonts.body }]}>
+                                        Purchased
+                                    </Text>
+                                </View>
                             )}
                         </Card>
                     )}
@@ -186,6 +230,7 @@ export default function ChallengeDetailScreen() {
                                         styles.tabText,
                                         {
                                             color: selectedTab === tab ? theme.textInverse : theme.textSecondary,
+                                            fontFamily: Fonts.body,
                                         },
                                     ]}
                                 >
@@ -202,19 +247,32 @@ export default function ChallengeDetailScreen() {
                                 <TouchableOpacity onPress={() => router.push(`/task/${task.id}` as any)}>
                                     <View style={styles.taskRow}>
                                         <View style={styles.taskContent}>
-                                            <Text style={[styles.taskTitle, { color: theme.text }]}>{task.title}</Text>
+                                            <Text style={[styles.taskTitle, { color: theme.text, fontFamily: Fonts.body }]}>
+                                                {task.title}
+                                            </Text>
                                             <Text
-                                                style={[styles.taskDescription, { color: theme.textSecondary }]}
+                                                style={[styles.taskDescription, { color: theme.textSecondary, fontFamily: Fonts.body }]}
                                                 numberOfLines={2}
                                             >
                                                 {task.description}
                                             </Text>
                                             {task.submission && (
-                                                <View style={[styles.statusBadge, { backgroundColor: theme.successLight }]}>
-                                                    <Icon name="check" size={12} color={theme.secondary} />
-                                                    <Text style={[styles.statusText, { color: theme.secondary }]}>
-                                                        Completed
-                                                    </Text>
+                                                <View style={styles.statusRow}>
+                                                    <View style={[styles.statusBadge, { backgroundColor: theme.successLight }]}>
+                                                        <Icon name="check" size={12} color={theme.secondary} />
+                                                        <Text style={[styles.statusText, { color: theme.secondary, fontFamily: Fonts.body }]}>
+                                                            Completed
+                                                        </Text>
+                                                    </View>
+                                                    {/* ✅ NEW: Show late indicator */}
+                                                    {task.submission.submittedLate && (
+                                                        <View style={[styles.lateIndicator, { backgroundColor: theme.warningLight }]}>
+                                                            <Icon name="clock" size={10} color={theme.warning} />
+                                                            <Text style={[styles.lateText, { color: theme.warning, fontFamily: Fonts.body }]}>
+                                                                Late
+                                                            </Text>
+                                                        </View>
+                                                    )}
                                                 </View>
                                             )}
                                         </View>
@@ -265,6 +323,28 @@ const styles = StyleSheet.create({
     },
     content: {
         paddingHorizontal: spacing.lg,
+    },
+    // ✅ NEW: Warning card styles
+    warningCard: {
+        marginTop: -spacing.lg,
+        marginBottom: spacing.md,
+    },
+    warningRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    warningText: {
+        flex: 1,
+        marginLeft: spacing.md,
+    },
+    warningTitle: {
+        fontSize: fontSize.base,
+        fontWeight: fontWeight.bold,
+        marginBottom: spacing.xs,
+    },
+    warningSubtitle: {
+        fontSize: fontSize.sm,
+        lineHeight: fontSize.sm * 1.5,
     },
     progressCard: {
         marginTop: -spacing.lg,
@@ -326,6 +406,20 @@ const styles = StyleSheet.create({
     purchaseButton: {
         marginTop: spacing.md,
     },
+    badgeStatus: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+        alignSelf: 'flex-start',
+        marginTop: spacing.md,
+        gap: spacing.xs,
+    },
+    badgeStatusText: {
+        fontSize: fontSize.sm,
+        fontWeight: fontWeight.semibold,
+    },
     tabsContainer: {
         marginBottom: spacing.md,
     },
@@ -361,18 +455,35 @@ const styles = StyleSheet.create({
         fontSize: fontSize.sm,
         marginTop: spacing.xs,
     },
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: spacing.sm,
+        gap: spacing.sm,
+    },
     statusBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,
         borderRadius: borderRadius.full,
-        alignSelf: 'flex-start',
-        marginTop: spacing.sm,
     },
     statusText: {
         fontSize: fontSize.xs,
         marginLeft: spacing.xs,
+        fontWeight: fontWeight.semibold,
+    },
+    // ✅ NEW: Late indicator styles
+    lateIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+        gap: spacing.xs,
+    },
+    lateText: {
+        fontSize: fontSize.xs,
         fontWeight: fontWeight.semibold,
     },
 });

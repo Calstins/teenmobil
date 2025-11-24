@@ -1,4 +1,4 @@
-// src/screens/profile/EditProfileScreen.tsx - With Age & Gender Validation
+// src/screens/profile/EditProfileScreen.tsx 
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import {
     View,
@@ -39,6 +39,8 @@ interface FormErrors {
     name?: string;
     age?: string;
     gender?: string;
+    country?: string;
+    state?: string;
     parentEmail?: string;
 }
 
@@ -150,7 +152,6 @@ export const EditProfileScreen: React.FC = () => {
         const sanitized = sanitizeAgeInput(text);
         setAge(sanitized);
 
-        // Clear age error when user types
         if (errors.age) {
             setErrors({ ...errors, age: undefined });
         }
@@ -162,7 +163,6 @@ export const EditProfileScreen: React.FC = () => {
     const handleGenderSelect = (selectedGender: string) => {
         setGender(selectedGender);
 
-        // Clear gender error when user selects
         if (errors.gender) {
             setErrors({ ...errors, gender: undefined });
         }
@@ -174,7 +174,6 @@ export const EditProfileScreen: React.FC = () => {
     const handleNameChange = (text: string) => {
         setName(text);
 
-        // Clear name error when user types
         if (errors.name) {
             setErrors({ ...errors, name: undefined });
         }
@@ -186,7 +185,6 @@ export const EditProfileScreen: React.FC = () => {
     const handleParentEmailChange = (text: string) => {
         setParentEmail(text);
 
-        // Clear parent email error when user types
         if (errors.parentEmail) {
             setErrors({ ...errors, parentEmail: undefined });
         }
@@ -270,7 +268,7 @@ export const EditProfileScreen: React.FC = () => {
     };
 
     /**
-     * Validate form with detailed error messages
+     * ✅ UPDATED: Validate form with required country & state
      */
     const validateForm = (): boolean => {
         const newErrors: FormErrors = {};
@@ -291,6 +289,16 @@ export const EditProfileScreen: React.FC = () => {
         const genderValidation = validateGenderWithMessage(gender);
         if (!genderValidation.isValid) {
             newErrors.gender = genderValidation.error;
+        }
+
+        // ✅ NEW: Validate country (REQUIRED)
+        if (!selectedCountryName || !selectedCountryName.trim()) {
+            newErrors.country = 'Country is required';
+        }
+
+        // ✅ NEW: Validate state (REQUIRED)
+        if (!selectedState || !selectedState.trim()) {
+            newErrors.state = 'State/Region is required';
         }
 
         // Validate parent email if provided
@@ -315,8 +323,8 @@ export const EditProfileScreen: React.FC = () => {
                 name: name.trim(),
                 age: Number(age),
                 gender: gender.trim(),
-                state: selectedState.trim() || undefined,
-                country: selectedCountryName.trim() || undefined,
+                state: selectedState.trim(), // ✅ UPDATED: Now required, no undefined
+                country: selectedCountryName.trim(), // ✅ UPDATED: Now required, no undefined
                 parentEmail: parentEmail.trim() || undefined,
                 profilePhoto: profilePhoto || undefined,
             };
@@ -324,7 +332,6 @@ export const EditProfileScreen: React.FC = () => {
             const response = await profileApi.updateProfile(updateData);
 
             if (response.success) {
-                // Update user context
                 if (updateUser && response.data) {
                     updateUser(response.data);
                 }
@@ -408,6 +415,10 @@ export const EditProfileScreen: React.FC = () => {
                                     setSelectedState('');
                                     setShowCountryPicker(false);
                                     setCountrySearchQuery('');
+                                    // Clear country/state errors when selecting
+                                    if (errors.country) {
+                                        setErrors({ ...errors, country: undefined, state: undefined });
+                                    }
                                 }}
                             >
                                 <View style={styles.countryRow}>
@@ -489,6 +500,10 @@ export const EditProfileScreen: React.FC = () => {
                                     setSelectedState(item.name);
                                     setShowStatePicker(false);
                                     setStateSearchQuery('');
+                                    // Clear state error when selecting
+                                    if (errors.state) {
+                                        setErrors({ ...errors, state: undefined });
+                                    }
                                 }}
                             >
                                 <Text style={[styles.pickerItemText, { color: theme.text, fontFamily: Fonts.body }]}>
@@ -672,19 +687,25 @@ export const EditProfileScreen: React.FC = () => {
                     </View>
                 </Card>
 
-                {/* Location */}
+                {/* ✅ UPDATED: Location - Now Required */}
                 <Card style={styles.card}>
                     <Text style={[styles.sectionTitle, { color: theme.text, fontFamily: Fonts.header }]}>
-                        Location (Optional)
+                        Location <Text style={{ color: theme.error }}>*</Text>
                     </Text>
 
                     {/* Country Selector */}
                     <View style={styles.inputContainer}>
                         <Text style={[styles.label, { color: theme.text, fontFamily: Fonts.body }]}>
-                            Country
+                            Country <Text style={{ color: theme.error }}>*</Text>
                         </Text>
                         <TouchableOpacity
-                            style={[styles.pickerButton, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}
+                            style={[
+                                styles.pickerButton,
+                                {
+                                    backgroundColor: theme.backgroundSecondary,
+                                    borderColor: errors.country ? theme.error : theme.border
+                                }
+                            ]}
                             onPress={() => setShowCountryPicker(true)}
                         >
                             <Icon name="globe" size={20} color={theme.primary} />
@@ -696,15 +717,29 @@ export const EditProfileScreen: React.FC = () => {
                             </Text>
                             <Icon name="chevron-down" size={20} color={theme.textSecondary} />
                         </TouchableOpacity>
+                        {errors.country && (
+                            <View style={styles.errorContainer}>
+                                <Icon name="alert-circle" size={14} color={theme.error} />
+                                <Text style={[styles.errorText, { color: theme.error, fontFamily: Fonts.body }]}>
+                                    {errors.country}
+                                </Text>
+                            </View>
+                        )}
                     </View>
 
                     {/* State Selector */}
                     <View style={styles.inputContainer}>
                         <Text style={[styles.label, { color: theme.text, fontFamily: Fonts.body }]}>
-                            State/Region
+                            State/Region <Text style={{ color: theme.error }}>*</Text>
                         </Text>
                         <TouchableOpacity
-                            style={[styles.pickerButton, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}
+                            style={[
+                                styles.pickerButton,
+                                {
+                                    backgroundColor: theme.backgroundSecondary,
+                                    borderColor: errors.state ? theme.error : theme.border
+                                }
+                            ]}
                             onPress={() => setShowStatePicker(true)}
                             disabled={!selectedCountryCode}
                         >
@@ -717,6 +752,14 @@ export const EditProfileScreen: React.FC = () => {
                             </Text>
                             <Icon name="chevron-down" size={20} color={theme.textSecondary} />
                         </TouchableOpacity>
+                        {errors.state && (
+                            <View style={styles.errorContainer}>
+                                <Icon name="alert-circle" size={14} color={theme.error} />
+                                <Text style={[styles.errorText, { color: theme.error, fontFamily: Fonts.body }]}>
+                                    {errors.state}
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 </Card>
 

@@ -1,7 +1,16 @@
-// screens/home/ChallengeScreen.tsx
+// screens/home/ChallengeScreen.tsx - UPDATED WITH PAYSTACK
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Linking
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { badgeApi } from '../../api/badgeApi';
 import { challengeApi } from '../../api/challengeApi';
@@ -19,10 +28,30 @@ export const ChallengeScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string>('');
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   useEffect(() => {
     fetchChallenge();
   }, []);
+
+  // Listen for app state changes to verify payment on return
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const handleDeepLink = ({ url }: { url: string }) => {
+    // Handle payment callback
+    if (url.includes('payment/callback')) {
+      const reference = url.split('reference=')[1]?.split('&')[0];
+      if (reference) {
+        verifyPayment(reference);
+      }
+    }
+  };
 
   const fetchChallenge = async () => {
     try {
@@ -47,20 +76,60 @@ export const ChallengeScreen = () => {
 
   const handlePurchaseBadge = async () => {
     if (!challengeData?.badge) return;
+
     Alert.alert(
       'Purchase Badge',
-      `Purchase ${challengeData.badge.name} for $${challengeData.badge.price}?`,
+      `Purchase ${challengeData.badge.name} for ₦${challengeData.badge.price}?\n\nYou'll be redirected to Paystack to complete payment.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Purchase',
+          text: 'Continue',
           onPress: async () => {
+            setIsPurchasing(true);
             try {
-              await badgeApi.purchaseBadge(challengeData.badge.id);
-              Alert.alert('Success', 'Badge purchased successfully!');
-              fetchChallenge();
+              const response = await badgeApi.initializeBadgePurchase(
+                challengeData.badge.id
+              );
+
+              if (response.success && response.data) {
+                // Open Paystack payment page
+                const supported = await Linking.canOpenURL(
+                  response.data.authorization_url
+                );
+
+                if (supported) {
+                  await Linking.openURL(response.data.authorization_url);
+
+                  // Store reference for verification later
+                  // You might want to use AsyncStorage here
+                  const payReference = response.data?.reference;
+                  Alert.alert(
+                    'Payment Initiated',
+                    'Complete your payment in the browser. When done, return here to verify.',
+                    [
+                      {
+                        text: 'Verify Payment',
+                        onPress: () => {
+                          if (payReference) {
+                            verifyPayment(payReference);
+                          } else {
+                            Alert.alert('Error', 'No payment reference available for verification.');
+                          }
+                        },
+                      },
+                    ]
+                  );
+                } else {
+                  Alert.alert('Error', 'Cannot open payment link');
+                }
+              }
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to purchase badge');
+              Alert.alert(
+                'Error',
+                error.message || 'Failed to initialize payment'
+              );
+            } finally {
+              setIsPurchasing(false);
             }
           },
         },
@@ -68,7 +137,31 @@ export const ChallengeScreen = () => {
     );
   };
 
+  const verifyPayment = async (reference: string) => {
+    try {
+      const response = await badgeApi.verifyBadgePurchase(reference);
+
+      if (response.success) {
+        Alert.alert(
+          'Success! 🎉',
+          `${response.data.badge.name} purchased successfully!`,
+          [
+            {
+              text: 'OK',
+              onPress: () => fetchChallenge(), // Refresh to show updated badge status
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Payment Failed', 'Your payment could not be verified.');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to verify payment');
+    }
+  };
+
   if (isLoading) return <Loading message="Loading challenge..." />;
+
   if (!challengeData) {
     return (
       <View style={[styles.emptyContainer, { backgroundColor: theme.background }]}>
@@ -134,17 +227,34 @@ export const ChallengeScreen = () => {
                   {challengeData.badge.description}
                 </Text>
                 <Text style={[styles.badgePrice, { color: theme.primary, fontFamily: Fonts.body }]}>
-                  ₦x{challengeData.badge.price}
+                  ₦{challengeData.badge.price.toLocaleString()}
                 </Text>
+                {challengeData.badge.status !== 'AVAILABLE' && (
+                  <View style={[styles.statusBadge, {
+                    backgroundColor: challengeData.badge.status === 'EARNED'
+                      ? theme.successLight
+                      : theme.primaryLight
+                  }]}>
+                    <Text style={[styles.statusText, {
+                      color: challengeData.badge.status === 'EARNED'
+                        ? theme.success
+                        : theme.primary,
+                      fontFamily: Fonts.body
+                    }]}>
+                      {challengeData.badge.status === 'EARNED' ? '✓ Earned' : 'Purchased'}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
             {challengeData.badge.status === 'AVAILABLE' && (
               <Button
-                title="Purchase Badge"
+                title={isPurchasing ? "Processing..." : "Purchase with Paystack"}
                 onPress={handlePurchaseBadge}
                 variant="primary"
                 size="sm"
                 style={styles.purchaseButton}
+                disabled={isPurchasing}
               />
             )}
           </Card>
@@ -293,10 +403,22 @@ const styles = StyleSheet.create({
   },
   badgeDescription: {
     fontSize: fontSize.sm,
+    marginTop: spacing.xs,
   },
   badgePrice: {
     fontWeight: fontWeight.bold,
     marginTop: spacing.xs,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    marginTop: spacing.sm,
+  },
+  statusText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
   },
   purchaseButton: {
     marginTop: spacing.md,
