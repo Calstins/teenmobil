@@ -12,6 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
 import type { Teen } from '../../types';
 import { spacing, fontSize, fontWeight, borderRadius, Fonts } from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const ProfileScreen: React.FC = () => {
   const router = useRouter();
@@ -140,6 +141,7 @@ export const ProfileScreen: React.FC = () => {
   if (isLoading) return <Loading message="Loading profile..." />;
 
   return (
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
     <View style={[styles.container, { backgroundColor: theme.backgroundSecondary }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
@@ -483,6 +485,7 @@ export const ProfileScreen: React.FC = () => {
         </Text>
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 };
 
@@ -492,7 +495,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
+   paddingTop: spacing.lg,   
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: borderRadius.xl,
     borderBottomRightRadius: borderRadius.xl,

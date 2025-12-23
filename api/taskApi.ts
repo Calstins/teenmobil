@@ -10,23 +10,52 @@ export const taskApi = {
   submitTask: async (
     taskId: string,
     content: any,
-    files: Array<{ uri: string; type: string; name: string }> = []
+    files: Array<{ url?: string; uri?: string; type?: string; name?: string }> = []
   ): Promise<ApiResponse<any>> => {
-    const formData = new FormData();
-    formData.append('taskId', taskId);
-    formData.append('content', JSON.stringify(content));
-
-    files.forEach((file, index) => {
-      formData.append('files', {
-        uri: file.uri,
-        type: file.type,
-        name: file.name || `file_${index}`,
-      } as any);
+    console.log('📤 taskApi.submitTask called:', {
+      taskId,
+      content,
+      contentType: typeof content,
+      files: files.length,
+      filesDetail: files,
     });
 
-    return await apiClient.post('/teen/submissions', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    // ✅ CRITICAL FIX: For IMAGE tasks, files contain URLs from Cloudinary
+    // We need to send these URLs in the content, not as multipart files
+    const hasUploadedFiles = files.length > 0 && files[0].url;
+
+    if (hasUploadedFiles) {
+      // Images already uploaded to Cloudinary, send URLs in content
+      console.log('📸 Sending pre-uploaded image URLs');
+      
+      const payload = {
+        taskId,
+        content: JSON.stringify({
+          ...content,
+          fileUrls: files.map(f => f.url),
+        }),
+      };
+
+      console.log('📦 Payload:', payload);
+
+      return await apiClient.post('/teen/submissions', payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } else {
+      // Regular submission without files (or files not yet uploaded)
+      console.log('📝 Sending regular submission');
+      
+      const payload = {
+        taskId,
+        content: JSON.stringify(content),
+      };
+
+      console.log('📦 Payload:', payload);
+
+      return await apiClient.post('/teen/submissions', payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
   },
 
   getMySubmissions: async (): Promise<ApiResponse<any[]>> => {

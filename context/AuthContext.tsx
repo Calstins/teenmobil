@@ -5,7 +5,6 @@ import { useRouter, useSegments } from 'expo-router';
 import { authApi, RegisterData } from '../api/authApi';
 import { Teen } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import apiClient from '../api/apiClient';
 
 interface AuthContextType {
   user: Teen | null;

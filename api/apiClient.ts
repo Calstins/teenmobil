@@ -1,4 +1,4 @@
-// src/api/apiClient.ts - Fixed for React Native with proper route tracking
+// src/api/apiClient.ts - Enhanced route tracking
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { router } from 'expo-router';
@@ -9,6 +9,8 @@ class ApiClient {
   private client: AxiosInstance;
   private isNavigatingToLogin = false;
   private currentRoute: string = '';
+  private lastNavigationTime = 0;
+  private navigationCooldown = 2000; // 2 seconds
 
   constructor() {
     this.client = axios.create({
@@ -20,8 +22,7 @@ class ApiClient {
   }
 
   /**
-   * Set the current route from outside (called by navigation logic)
-   * This allows the API client to know what page the user is on
+   * Set the current route from outside
    */
   public setCurrentRoute(route: string): void {
     this.currentRoute = route;
@@ -37,13 +38,52 @@ class ApiClient {
     );
   }
 
+  /**
+   * Check if we should skip auth redirect
+   */
+  private shouldSkipAuthRedirect(): boolean {
+    const specialPages = [
+      'forgot-password',
+      'reset-password',
+      'onboarding',
+      'register',
+      'login',
+      'index',
+    ];
+    return specialPages.some(page => this.currentRoute.includes(page));
+  }
+
+  /**
+   * Navigate to login with cooldown to prevent rapid redirects
+   */
+  private navigateToLogin(): void {
+    const now = Date.now();
+    if (now - this.lastNavigationTime < this.navigationCooldown) {
+      console.log('⏸️ Navigation cooldown active - skipping redirect');
+      return;
+    }
+
+    if (!this.isNavigatingToLogin) {
+      this.isNavigatingToLogin = true;
+      this.lastNavigationTime = now;
+      
+      console.log('🔒 Navigating to login');
+      setTimeout(() => {
+        router.replace('/(auth)/login');
+        setTimeout(() => {
+          this.isNavigatingToLogin = false;
+        }, 500);
+      }, 100);
+    }
+  }
+
   private setupInterceptors(): void {
     this.client.interceptors.request.use(
       async (config) => {
         try {
           const token = await AsyncStorage.getItem('authToken');
 
-          // Check if token is required for this endpoint
+          // Public endpoints that don't require authentication
           const publicEndpoints = [
             '/teen/login',
             '/teen/register',
@@ -58,23 +98,14 @@ class ApiClient {
             config.url?.includes(endpoint)
           );
 
-          // ✅ FIX: Don't redirect if on password reset pages
-          const onPasswordResetPage = this.isOnPasswordResetPage();
+          // Check if we should skip redirect
+          const shouldSkip = this.shouldSkipAuthRedirect();
 
-          if (
-            !isPublicEndpoint &&
-            !token &&
-            !this.isNavigatingToLogin &&
-            !onPasswordResetPage
-          ) {
-            this.isNavigatingToLogin = true;
+          if (!isPublicEndpoint && !token && !shouldSkip) {
+            console.log('🔒 No token found for protected endpoint');
             await AsyncStorage.multiRemove(['authToken', 'userData']);
-            console.log('🔒 No token found - redirecting to login');
-
-            setTimeout(() => {
-              router.replace('/(auth)/login');
-              this.isNavigatingToLogin = false;
-            }, 100);
+            
+            this.navigateToLogin();
 
             return Promise.reject({
               message: 'Authentication required',
@@ -86,7 +117,7 @@ class ApiClient {
             config.headers.Authorization = `Bearer ${token}`;
           }
         } catch (error) {
-          console.error('Error getting auth token:', error);
+          console.error('❌ Error in request interceptor:', error);
         }
         return config;
       },
@@ -101,14 +132,11 @@ class ApiClient {
 
           // Handle 401 Unauthorized
           if (status === 401) {
-            // ✅ FIX: Don't auto-redirect on password reset pages
             const onPasswordResetPage = this.isOnPasswordResetPage();
+            const shouldSkip = this.shouldSkipAuthRedirect();
 
-            if (onPasswordResetPage) {
-              console.log(
-                '⚠️ 401 error on password reset page - not redirecting'
-              );
-              // Just reject the error without redirecting
+            if (onPasswordResetPage || shouldSkip) {
+              console.log('⚠️ 401 on special page - not redirecting');
               return Promise.reject({
                 message: data?.message || 'Unauthorized',
                 status,
@@ -116,20 +144,9 @@ class ApiClient {
               });
             }
 
-            console.log(
-              '🔒 Unauthorized - clearing auth and redirecting to login'
-            );
+            console.log('🔒 401 Unauthorized - clearing auth');
             await AsyncStorage.multiRemove(['authToken', 'userData']);
-
-            // Prevent multiple navigation attempts
-            if (!this.isNavigatingToLogin) {
-              this.isNavigatingToLogin = true;
-
-              setTimeout(() => {
-                router.replace('/(auth)/login');
-                this.isNavigatingToLogin = false;
-              }, 100);
-            }
+            this.navigateToLogin();
           }
 
           return Promise.reject({

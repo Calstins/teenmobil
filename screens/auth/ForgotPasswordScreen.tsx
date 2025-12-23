@@ -20,6 +20,7 @@ import { Input } from '../../components/common/Input';
 import { useTheme } from '../../context/ThemeContext';
 import { fontSize, fontWeight, spacing, borderRadius, Fonts } from '../../theme';
 import { authApi } from '../../api/authApi';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ForgotPasswordSchema = Yup.object().shape({
     email: Yup.string().email('Invalid email').required('Email is required'),
@@ -58,6 +59,7 @@ export const ForgotPasswordScreen = () => {
     };
 
     return (
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={[styles.keyboardView, { backgroundColor: theme.background }]}
@@ -148,6 +150,7 @@ export const ForgotPasswordScreen = () => {
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>
+    </SafeAreaView>
     );
 };
 

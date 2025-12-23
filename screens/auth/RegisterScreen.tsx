@@ -27,6 +27,7 @@ import { Input } from '../../components/common/Input';
 import { useTheme } from '../../context/ThemeContext';
 import { fontSize, fontWeight, spacing, borderRadius, Fonts } from '../../theme';
 import { uploadImageToCloudinary } from '../../utils/cloudinaryUpload';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Validation schemas for each step
 const Step1Schema = Yup.object().shape({
@@ -302,7 +303,6 @@ export const RegisterScreen = () => {
                   setSelectedCountryCode(item.code);
                   props.setFieldValue('country', item.name);
                   props.setFieldValue('state', ''); // Reset state when country changes
-                  setFormData({ ...formData, country: item.name, state: '' });
                   setShowCountryPicker(false);
                   setCountrySearchQuery('');
                 }}
@@ -384,7 +384,6 @@ export const RegisterScreen = () => {
                 ]}
                 onPress={() => {
                   props.setFieldValue('state', item.name);
-                  setFormData({ ...formData, state: item.name });
                   setShowStatePicker(false);
                   setStateSearchQuery('');
                 }}
@@ -728,6 +727,7 @@ export const RegisterScreen = () => {
   );
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.keyboardView, { backgroundColor: theme.background }]}
@@ -814,6 +814,7 @@ export const RegisterScreen = () => {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 

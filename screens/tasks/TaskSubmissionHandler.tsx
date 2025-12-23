@@ -1,4 +1,4 @@
-// screens/task/TaskSubmissionHandler.tsx
+// screens/task/TaskSubmissionHandler.tsx - COMPLETE REWRITE
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -6,6 +6,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useTheme } from '../../context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { spacing, fontSize, fontWeight, borderRadius, Fonts } from '../../theme';
 import { uploadImageToCloudinary } from '../../utils/cloudinaryUpload';
 import { TaskType } from '../../types';
@@ -97,23 +98,14 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
         setFormResponses(prev => ({ ...prev, [fieldId]: value }));
     };
 
-    // Checklist toggle handler - FIXED
+    // Checklist toggle handler
     const handleChecklistToggle = (itemId: string) => {
-        console.log('Toggling item:', itemId);
-        console.log('Current checked items:', checkedItems);
-
         setCheckedItems(prev => {
             const isCurrentlyChecked = prev.includes(itemId);
             if (isCurrentlyChecked) {
-                // Remove the item
-                const newItems = prev.filter(id => id !== itemId);
-                console.log('After removal:', newItems);
-                return newItems;
+                return prev.filter(id => id !== itemId);
             } else {
-                // Add the item
-                const newItems = [...prev, itemId];
-                console.log('After addition:', newItems);
-                return newItems;
+                return [...prev, itemId];
             }
         });
     };
@@ -125,95 +117,153 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
             let content: any = {};
             let files: any[] = [];
 
+            console.log('🚀 Starting submission for task type:', taskType);
+
             switch (taskType) {
                 case 'TEXT':
-                    if (!textContent.trim()) {
+                    if (!textContent || !textContent.trim()) {
                         Alert.alert('Error', 'Please enter your response');
+                        setIsSubmitting(false);
                         return;
                     }
-                    content = { text: textContent };
+                    content = { text: String(textContent).trim() };
+                    console.log('📝 TEXT content prepared');
                     break;
 
                 case 'IMAGE':
-                    if (selectedImages.length === 0) {
+                    if (!selectedImages || selectedImages.length === 0) {
                         Alert.alert('Error', 'Please select at least one image');
+                        setIsSubmitting(false);
                         return;
                     }
 
-                    // Upload images to Cloudinary
-                    const uploadedUrls: string[] = [];
-                    for (let i = 0; i < selectedImages.length; i++) {
-                        const progress = ((i + 1) / selectedImages.length) * 100;
-                        setUploadProgress(progress);
-                        const url = await uploadImageToCloudinary(selectedImages[i]);
-                        uploadedUrls.push(url);
-                    }
+                    console.log('📸 Uploading images:', selectedImages.length);
+                    
+                    try {
+                        const uploadedUrls: string[] = [];
+                        
+                        for (let i = 0; i < selectedImages.length; i++) {
+                            const progress = ((i + 1) / selectedImages.length) * 100;
+                            setUploadProgress(progress);
+                            
+                            const url = await uploadImageToCloudinary(selectedImages[i]);
+                            
+                            if (url && typeof url === 'string') {
+                                uploadedUrls.push(url);
+                                console.log(`✅ Image ${i + 1} uploaded:`, url);
+                            } else {
+                                throw new Error(`Failed to upload image ${i + 1}`);
+                            }
+                        }
 
-                    files = uploadedUrls.map(url => ({ url }));
-                    content = {
-                        description: imageDescription,
-                        imageCount: selectedImages.length
-                    };
+                        files = uploadedUrls.map(url => ({ url: String(url) }));
+                        content = {
+                            description: String(imageDescription || '').trim(),
+                            imageCount: uploadedUrls.length
+                        };
+                        
+                        console.log('📸 IMAGE content prepared:', content);
+                        console.log('📸 Files prepared:', files.length);
+                    } catch (uploadError: any) {
+                        console.error('❌ Image upload error:', uploadError);
+                        Alert.alert('Upload Failed', uploadError?.message || 'Failed to upload images');
+                        setIsSubmitting(false);
+                        return;
+                    }
                     break;
 
                 case 'VIDEO':
-                    if (!videoUrl.trim()) {
+                    if (!videoUrl || !videoUrl.trim()) {
                         Alert.alert('Error', 'Please enter a video URL');
+                        setIsSubmitting(false);
                         return;
                     }
                     if (!validateVideoUrl(videoUrl)) {
                         Alert.alert('Error', 'Please enter a valid YouTube or Vimeo URL');
+                        setIsSubmitting(false);
                         return;
                     }
-                    content = { videoUrl };
+                    content = { videoUrl: String(videoUrl).trim() };
+                    console.log('🎥 VIDEO content prepared');
                     break;
 
                 case 'QUIZ':
-                    const allQuestionsAnswered = taskOptions?.questions?.every(
-                        (q: any) => quizAnswers[q.id]
-                    );
+                    const questions = taskOptions?.questions || [];
+                    const allQuestionsAnswered = questions.every((q: any) => quizAnswers[q.id]);
+                    
                     if (!allQuestionsAnswered) {
                         Alert.alert('Error', 'Please answer all questions');
+                        setIsSubmitting(false);
                         return;
                     }
-                    content = { answers: quizAnswers };
+                    
+                    const sanitizedAnswers: Record<string, string> = {};
+                    Object.keys(quizAnswers).forEach(key => {
+                        sanitizedAnswers[String(key)] = String(quizAnswers[key]);
+                    });
+                    
+                    content = { answers: sanitizedAnswers };
+                    console.log('🎯 QUIZ content prepared');
                     break;
 
                 case 'FORM':
-                    const allFieldsFilled = taskOptions?.fields?.every(
-                        (f: any) => !f.required || formResponses[f.id]
+                    const fields = taskOptions?.fields || [];
+                    const allFieldsFilled = fields.every(
+                        (f: any) => !f.required || (formResponses[f.id] && String(formResponses[f.id]).trim())
                     );
+                    
                     if (!allFieldsFilled) {
                         Alert.alert('Error', 'Please fill all required fields');
+                        setIsSubmitting(false);
                         return;
                     }
-                    content = { responses: formResponses };
+                    
+                    const sanitizedResponses: Record<string, string> = {};
+                    Object.keys(formResponses).forEach(key => {
+                        sanitizedResponses[String(key)] = String(formResponses[key]).trim();
+                    });
+                    
+                    content = { responses: sanitizedResponses };
+                    console.log('📋 FORM content prepared');
                     break;
 
                 case 'PICK_ONE':
                     if (!selectedOption) {
                         Alert.alert('Error', 'Please select an option');
+                        setIsSubmitting(false);
                         return;
                     }
-                    content = { selectedOption };
+                    content = { selectedOption: String(selectedOption) };
+                    console.log('☝️ PICK_ONE content prepared');
                     break;
 
                 case 'CHECKLIST':
-                    if (checkedItems.length === 0) {
+                    if (!checkedItems || checkedItems.length === 0) {
                         Alert.alert('Error', 'Please check at least one item');
+                        setIsSubmitting(false);
                         return;
                     }
-                    content = { checkedItems };
+                    
+                    const sanitizedItems = checkedItems.map(item => String(item));
+                    content = { checkedItems: sanitizedItems };
+                    console.log('✅ CHECKLIST content prepared');
                     break;
 
                 default:
                     Alert.alert('Error', 'Unknown task type');
+                    setIsSubmitting(false);
                     return;
             }
 
+            console.log('📤 Submitting to server...');
             await onSubmit(content, files);
+            console.log('✅ Submission successful!');
+            
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to submit task');
+            console.error('❌ Submission error:', error);
+            
+            const errorMessage = error?.response?.data?.message || error?.message || 'Failed to submit task';
+            Alert.alert('Submission Error', errorMessage);
         } finally {
             setIsSubmitting(false);
             setUploadProgress(0);
@@ -256,7 +306,7 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
                         {selectedImages.length > 0 && (
                             <ScrollView horizontal style={styles.imagePreviewContainer}>
                                 {selectedImages.map((uri, index) => (
-                                    <View key={`image-${index}-${uri}`} style={styles.imagePreview}>
+                                    <View key={index} style={styles.imagePreview}>
                                         <Image source={{ uri }} style={styles.previewImage} />
                                         <TouchableOpacity
                                             style={[styles.removeImageButton, { backgroundColor: theme.error }]}
@@ -342,13 +392,13 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
                             Quiz Questions
                         </Text>
                         {taskOptions?.questions?.map((question: any, index: number) => (
-                            <Card key={`question-${question.id}`} style={styles.questionCard}>
+                            <Card key={question.id} style={styles.questionCard}>
                                 <Text style={[styles.questionText, { color: theme.text, fontFamily: Fonts.body }]}>
                                     {index + 1}. {question.text}
                                 </Text>
                                 {question.options?.map((option: string, optionIndex: number) => (
                                     <TouchableOpacity
-                                        key={`question-${question.id}-option-${optionIndex}-${option}`}
+                                        key={`${question.id}-${optionIndex}`}
                                         style={[
                                             styles.optionButton,
                                             {
@@ -387,7 +437,7 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
                             Form Fields
                         </Text>
                         {taskOptions?.fields?.map((field: any) => (
-                            <View key={`field-${field.id}`} style={styles.fieldContainer}>
+                            <View key={field.id} style={styles.fieldContainer}>
                                 <Text style={[styles.fieldLabel, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
                                     {field.label} {field.required && <Text style={{ color: theme.error }}>*</Text>}
                                 </Text>
@@ -419,7 +469,7 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
                         </Text>
                         {taskOptions?.options?.map((option: any) => (
                             <TouchableOpacity
-                                key={`pick-one-${option.id}`}
+                                key={option.id}
                                 style={[
                                     styles.pickOneCard,
                                     {
@@ -462,11 +512,6 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
                 );
 
             case 'CHECKLIST':
-                // Debug logging
-                console.log('🔍 CHECKLIST Rendering');
-                console.log('Task Options:', JSON.stringify(taskOptions, null, 2));
-                console.log('Checked Items:', checkedItems);
-
                 const checklistItems = taskOptions?.items || [];
 
                 if (checklistItems.length === 0) {
@@ -489,14 +534,13 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
                             Check off items as you complete them
                         </Text>
                         {checklistItems.map((item: any, index: number) => {
-                            // Generate unique ID: use existing ID or create from index and text
-                            const itemId = item.id || item._id || `item-${index}-${item.text?.substring(0, 10).replace(/\s+/g, '-')}`;
+                            const itemId = item.id || item._id || `item-${index}`;
                             const itemText = item.text || item.title || item.name || `Item ${index + 1}`;
                             const isChecked = checkedItems.includes(itemId);
 
                             return (
                                 <TouchableOpacity
-                                    key={`checklist-${index}`}
+                                    key={index}
                                     style={[
                                         styles.checklistItem,
                                         {
@@ -504,10 +548,7 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
                                             backgroundColor: isChecked ? theme.primaryLight : theme.surface,
                                         }
                                     ]}
-                                    onPress={() => {
-                                        console.log('Toggling item:', { index, itemId, itemText });
-                                        handleChecklistToggle(itemId);
-                                    }}
+                                    onPress={() => handleChecklistToggle(itemId)}
                                     activeOpacity={0.7}
                                 >
                                     <View style={[
@@ -537,7 +578,6 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
                             );
                         })}
 
-                        {/* Progress indicator */}
                         <View style={[styles.progressIndicator, { backgroundColor: theme.backgroundSecondary }]}>
                             <Text style={[styles.progressIndicatorText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
                                 {checkedItems.length} of {checklistItems.length} completed
@@ -559,6 +599,7 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
     };
 
     return (
+         <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {renderSubmissionForm()}
@@ -574,6 +615,7 @@ export const TaskSubmissionHandler: React.FC<TaskSubmissionHandlerProps> = ({
                 />
             </View>
         </View>
+        </SafeAreaView>
     );
 };
 
@@ -773,3 +815,5 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
     },
 });
+
+export default TaskSubmissionHandler;

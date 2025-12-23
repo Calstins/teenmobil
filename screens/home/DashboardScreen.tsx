@@ -10,6 +10,7 @@ import { profileApi } from '../../api/profileApi';
 import { AuthContext } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { fontSize, fontWeight, spacing, borderRadius, Fonts } from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface DashboardData {
   stats: {
@@ -76,6 +77,7 @@ export const DashboardScreen = () => {
   }
 
   return (
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
     <ScrollView
       style={[styles.container, { backgroundColor: theme.backgroundSecondary }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -223,6 +225,7 @@ export const DashboardScreen = () => {
         </Card>
       </View>
     </ScrollView>
+      </SafeAreaView>
   );
 };
 
@@ -232,7 +235,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.lg,   
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: borderRadius.xl,
     borderBottomRightRadius: borderRadius.xl,

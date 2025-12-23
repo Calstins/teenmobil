@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { Card } from '../../components/common/Card';
 import { useTheme } from '../../context/ThemeContext';
 import { spacing, fontSize, fontWeight, borderRadius, Fonts } from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface FAQItem {
     question: string;
@@ -194,6 +195,7 @@ export const HelpSupportScreen: React.FC = () => {
     };
 
     return (
+          <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             {/* Header */}
             <View style={[styles.header, { backgroundColor: theme.primary }]}>
@@ -380,6 +382,7 @@ export const HelpSupportScreen: React.FC = () => {
                 </View>
             </ScrollView>
         </View>
+         </SafeAreaView>
     );
 };
 
@@ -392,7 +395,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: spacing.lg,
-        paddingTop: spacing.xxl,
+        paddingTop: spacing.lg,   
         paddingBottom: spacing.lg,
     },
     backButton: {

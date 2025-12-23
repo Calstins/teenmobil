@@ -9,6 +9,7 @@ import { Loading } from '../../components/common/Loading';
 import { TaskSubmissionHandler } from './TaskSubmissionHandler';
 import { useTheme } from '../../context/ThemeContext';
 import { borderRadius, fontSize, fontWeight, spacing, Fonts } from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const TaskDetailScreen = () => {
   const router = useRouter();
@@ -55,6 +56,7 @@ export const TaskDetailScreen = () => {
 
   if (!taskData) {
     return (
+        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
       <View style={[styles.emptyContainer, { backgroundColor: theme.background }]}>
         <Icon name="alert-circle" size={64} color={theme.borderLight} />
         <Text style={[styles.emptyText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
@@ -69,10 +71,12 @@ export const TaskDetailScreen = () => {
           </Text>
         </TouchableOpacity>
       </View>
+        </SafeAreaView>
     );
   }
 
   return (
+     <SafeAreaView style={{ flex: 1 }} edges={['top']}>
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
@@ -131,6 +135,7 @@ export const TaskDetailScreen = () => {
         />
       )}
     </View>
+    </SafeAreaView>
   );
 };
 
@@ -150,7 +155,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
+   paddingTop: spacing.lg,   
     paddingBottom: spacing.lg,
   },
   headerBackButton: {

@@ -14,6 +14,7 @@ import {
     TextInput,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Country, State } from 'country-state-city';
@@ -532,6 +533,7 @@ export const EditProfileScreen: React.FC = () => {
     }
 
     return (
+          <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             {/* Header */}
             <View style={[styles.header, { backgroundColor: theme.primary }]}>
@@ -808,6 +810,7 @@ export const EditProfileScreen: React.FC = () => {
             {renderCountryPicker()}
             {renderStatePicker()}
         </View>
+         </SafeAreaView>
     );
 };
 
@@ -820,7 +823,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: spacing.lg,
-        paddingTop: spacing.xxl,
+        paddingTop: spacing.lg,   
         paddingBottom: spacing.lg,
     },
     backButton: {

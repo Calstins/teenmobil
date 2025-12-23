@@ -17,8 +17,15 @@ import Icon from 'react-native-vector-icons/Feather';
 import { Button } from '../../components/common/Button';
 import { useTheme } from '../../context/ThemeContext';
 import { spacing, fontSize, fontWeight, borderRadius, Fonts } from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
+
+const LOCAL_IMAGES = {
+  study: require('../../assets/images/study.png'),
+  prize: require('../../assets/images/prize.png'),
+  community: require('../../assets/images/community.png'),
+};
 
 const onboardingData = [
   {
@@ -32,21 +39,21 @@ const onboardingData = [
     id: 2,
     title: 'Complete Fun Challenges 🚀',
     description: 'Engage in Bible studies, read inspiring books, participate in activities, and work on exciting projects!',
-    image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop',
+   image: LOCAL_IMAGES.study,
     gradient: ['#FF946B', '#FFBFA9'] as const,
   },
   {
     id: 3,
     title: 'Earn Badges & Rewards 🏆',
     description: 'Complete challenges to earn cool badges and enter our annual raffle for amazing prizes!',
-    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&h=600&fit=crop',
+    image: LOCAL_IMAGES.prize,
     gradient: ['#FFBFA9', '#FFD6C7'] as const,
   },
   {
     id: 4,
     title: 'Join Our Community 💪',
     description: 'Connect with teens from around the world who are growing in faith and character together!',
-    image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&h=600&fit=crop',
+    image: LOCAL_IMAGES.community,
     gradient: ['#FFD6C7', '#FFEBE4'] as const,
   },
 ];
@@ -96,6 +103,7 @@ export const OnboardingScreen = () => {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
     <View style={styles.container}>
       {/* Skip Button */}
       {currentIndex < onboardingData.length - 1 && (
@@ -103,7 +111,7 @@ export const OnboardingScreen = () => {
           style={styles.skipButton}
           onPress={skipOnboarding}
         >
-          <Text style={[styles.skipText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+          <Text style={[styles.skipText, { color: theme.textInverse, fontFamily: Fonts.body }]}>
             Skip
           </Text>
         </TouchableOpacity>
@@ -127,10 +135,14 @@ export const OnboardingScreen = () => {
               {/* Image */}
               <View style={styles.imageContainer}>
                 <Image
-                  source={{ uri: item.image }}
-                  style={styles.image}
-                  resizeMode="cover"
-                />
+          source={
+            typeof item.image === 'string' 
+              ? { uri: item.image } 
+              : item.image
+          }
+          style={styles.image}
+          resizeMode="cover"
+        />
                 <View style={styles.imageOverlay} />
               </View>
 
@@ -215,6 +227,7 @@ export const OnboardingScreen = () => {
         </View>
       </View>
     </View>
+    </SafeAreaView>
   );
 };
 
@@ -271,6 +284,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
     lineHeight: 28,
+    paddingBottom: spacing.lg,
   },
   bottomSection: {
     height: height * 0.3,

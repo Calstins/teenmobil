@@ -27,6 +27,7 @@ import { uploadImageToCloudinary } from '../../utils/cloudinaryUpload';
 import { AuthContext } from '../../context/AuthContext';
 import apiClient from '../../api/apiClient';
 import { profileApi } from '../../api/profileApi';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const ProfileSetupScreen = () => {
   const router = useRouter();
@@ -518,6 +519,7 @@ export const ProfileSetupScreen = () => {
     switch (step) {
       case 1:
         return (
+          <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
           <View style={styles.stepContainer}>
             <TouchableOpacity
               style={[styles.imagePicker, { borderColor: theme.borderLight }]}
@@ -588,6 +590,7 @@ export const ProfileSetupScreen = () => {
               </Text>
             </TouchableOpacity>
           </View>
+          </SafeAreaView>
         );
 
       case 2:
@@ -773,7 +776,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.lg,   
     paddingBottom: spacing.lg,
   },
   headerTitle: {
@@ -783,6 +786,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     marginTop: spacing.sm,
     fontSize: fontSize.base,
+    paddingBottom: spacing.md
   },
   progressContainer: {
     flexDirection: 'row',

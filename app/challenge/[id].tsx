@@ -11,6 +11,7 @@ import { Loading } from '../../components/common/Loading';
 import { useTheme } from '../../context/ThemeContext';
 import { borderRadius, fontSize, fontWeight, spacing, Fonts } from '../../theme';
 import { ChallengeDetail } from '../../types';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChallengeDetailScreen() {
     const router = useRouter();
@@ -93,7 +94,8 @@ export default function ChallengeDetailScreen() {
 
     if (!challengeData) {
         return (
-            <View style={[styles.emptyContainer, { backgroundColor: theme.background }]}>
+<SafeAreaView style={{ flex: 1 }} edges={['top']}>            
+    <View style={[styles.emptyContainer, { backgroundColor: theme.background }]}>
                 <Icon name="calendar" size={64} color={theme.borderLight} />
                 <Text style={[styles.emptyText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
                     Challenge not found
@@ -104,6 +106,7 @@ export default function ChallengeDetailScreen() {
                     style={{ marginTop: spacing.md }}
                 />
             </View>
+            </SafeAreaView>
         );
     }
 
@@ -111,6 +114,7 @@ export default function ChallengeDetailScreen() {
     const isPastChallenge = Boolean((challengeData.challenge as any)?.isPastChallenge);
 
     return (
+        <SafeAreaView style={{ flex: 1 }} edges={['top']}> 
         <View style={[styles.container, { backgroundColor: theme.backgroundSecondary }]}>
             {/* Header */}
             <View style={[styles.header, { backgroundColor: theme.primary }]}>
@@ -285,6 +289,7 @@ export default function ChallengeDetailScreen() {
                 </View>
             </ScrollView>
         </View>
+        </SafeAreaView>
     );
 }
 
@@ -304,8 +309,8 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: spacing.lg,
-        paddingTop: spacing.xxl,
-        paddingBottom: spacing.lg,
+        paddingTop: spacing.xl,   
+        paddingBottom: spacing.xxl,
     },
     backButton: {
         marginBottom: spacing.md,
@@ -320,6 +325,7 @@ const styles = StyleSheet.create({
     headerSubtitle: {
         marginTop: spacing.sm,
         fontSize: fontSize.base,
+        paddingBottom: spacing.md
     },
     content: {
         paddingHorizontal: spacing.lg,
@@ -355,6 +361,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: spacing.md,
+        marginTop: spacing.xl
     },
     progressTitle: {
         fontSize: fontSize.lg,

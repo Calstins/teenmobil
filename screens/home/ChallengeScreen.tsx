@@ -20,6 +20,7 @@ import { Loading } from '../../components/common/Loading';
 import { useTheme } from '../../context/ThemeContext';
 import { borderRadius, fontSize, fontWeight, spacing, Fonts } from '../../theme';
 import { ChallengeDetail } from '../../types';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const ChallengeScreen = () => {
   const router = useRouter();
@@ -164,18 +165,21 @@ export const ChallengeScreen = () => {
 
   if (!challengeData) {
     return (
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
       <View style={[styles.emptyContainer, { backgroundColor: theme.background }]}>
         <Icon name="calendar" size={64} color={theme.borderLight} />
         <Text style={[styles.emptyText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
           No active challenge available
         </Text>
       </View>
+      </SafeAreaView>
     );
   }
 
   const tabs = Object.keys(challengeData.tasks);
 
   return (
+     <SafeAreaView style={{ flex: 1 }} edges={['top']}>
     <View style={[styles.container, { backgroundColor: theme.backgroundSecondary }]}>
       <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={[styles.header, { backgroundColor: theme.primary }]}>
@@ -315,6 +319,7 @@ export const ChallengeScreen = () => {
         </View>
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 };
 
@@ -335,7 +340,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.lg,   
     paddingBottom: spacing.lg,
     borderBottomLeftRadius: borderRadius.xl,
     borderBottomRightRadius: borderRadius.xl,
@@ -347,6 +352,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     marginTop: spacing.sm,
     fontSize: fontSize.base,
+    paddingBottom: spacing.md
   },
   content: {
     paddingHorizontal: spacing.lg,

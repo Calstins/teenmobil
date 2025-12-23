@@ -15,6 +15,7 @@ import { badgeApi } from '../../api/badgeApi';
 import { BadgeStatus } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { spacing, fontSize, fontWeight, borderRadius, Fonts } from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const BadgesScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -65,6 +66,7 @@ export const BadgesScreen: React.FC = () => {
   const purchasedCount = badges.filter((b) => b.status === 'PURCHASED').length;
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
     <View style={[styles.container, { backgroundColor: theme.backgroundSecondary }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
@@ -162,6 +164,7 @@ export const BadgesScreen: React.FC = () => {
         )}
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 };
 
@@ -171,7 +174,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
+   paddingTop: spacing.lg,   
     paddingBottom: spacing.lg,
     borderBottomLeftRadius: borderRadius.xl,
     borderBottomRightRadius: borderRadius.xl,
@@ -183,6 +186,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     marginTop: spacing.sm,
     fontSize: fontSize.base,
+    paddingBottom: spacing.md
   },
   statsContainer: {
     paddingHorizontal: spacing.lg,

@@ -16,6 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { communityApi } from '../../api/communityApi';
 import { LeaderboardEntry, RecentActivity, CommunityStats } from '../../types';
 import { spacing, fontSize, fontWeight, borderRadius, Fonts } from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const CommunityScreen: React.FC = () => {
     const { theme } = useTheme();
@@ -104,6 +105,7 @@ export const CommunityScreen: React.FC = () => {
     }
 
     return (
+        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={[styles.container, { backgroundColor: theme.backgroundSecondary }]}>
             {/* Header */}
             <View style={[styles.header, { backgroundColor: theme.primary }]}>
@@ -354,6 +356,7 @@ export const CommunityScreen: React.FC = () => {
                 )}
             </ScrollView>
         </View>
+        </SafeAreaView>
     );
 };
 
@@ -363,7 +366,7 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: spacing.lg,
-        paddingTop: spacing.xxl,
+      paddingTop: spacing.lg,   
         paddingBottom: spacing.xl,
         borderBottomLeftRadius: borderRadius.xl,
         borderBottomRightRadius: borderRadius.xl,
@@ -375,6 +378,7 @@ const styles = StyleSheet.create({
     headerSubtitle: {
         marginTop: spacing.xs,
         fontSize: fontSize.base,
+        paddingBottom: spacing.md
     },
     statsCard: {
         marginHorizontal: spacing.lg,

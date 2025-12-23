@@ -16,6 +16,7 @@ import { progressApi } from '../../api/progressApi';
 import { useTheme } from '../../context/ThemeContext';
 import { useRouter } from 'expo-router';
 import { spacing, fontSize, fontWeight, borderRadius, Fonts } from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const ProgressScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -72,6 +73,7 @@ export const ProgressScreen: React.FC = () => {
   }
 
   return (
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
     <View style={[styles.container, { backgroundColor: theme.backgroundSecondary }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
@@ -216,6 +218,7 @@ export const ProgressScreen: React.FC = () => {
         )}
       </ScrollView>
     </View>
+  </SafeAreaView>
   );
 };
 
@@ -225,7 +228,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
+   paddingTop: spacing.lg,   
     paddingBottom: spacing.lg,
     borderBottomLeftRadius: borderRadius.xl,
     borderBottomRightRadius: borderRadius.xl,
@@ -237,6 +240,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     marginTop: spacing.sm,
     fontSize: fontSize.base,
+    paddingBottom: spacing.md
   },
   statsContainer: {
     paddingHorizontal: spacing.lg,

@@ -20,6 +20,7 @@ import { Loading } from '../../components/common/Loading';
 import { useTheme } from '../../context/ThemeContext';
 import { fontSize, fontWeight, spacing, borderRadius, Fonts } from '../../theme';
 import { authApi } from '../../api/authApi';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ResetPasswordSchema = Yup.object().shape({
     password: Yup.string()
@@ -115,6 +116,7 @@ export const ResetPasswordScreen = () => {
     }
 
     return (
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={[styles.keyboardView, { backgroundColor: theme.background }]}
@@ -201,6 +203,7 @@ export const ResetPasswordScreen = () => {
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 };
 

@@ -20,6 +20,7 @@ import { Input } from '../../components/common/Input';
 import { AuthContext } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { fontSize, fontWeight, spacing, borderRadius, Fonts } from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const LoginSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email').required('Email is required'),
@@ -48,6 +49,7 @@ export const LoginScreen = () => {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.keyboardView, { backgroundColor: theme.background }]}
@@ -61,7 +63,7 @@ export const LoginScreen = () => {
           {/* Logo/Icon */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../assets/images/teenshapers-logo.png')}
+              source={require('../../assets/images/logo.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -161,6 +163,7 @@ export const LoginScreen = () => {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
