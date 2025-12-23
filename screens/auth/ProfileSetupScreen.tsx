@@ -1,4 +1,4 @@
-// screens/auth/ProfileSetupScreen.tsx - WITH REQUIRED COUNTRY
+// screens/auth/ProfileSetupScreen.tsx - Fixed Component
 import { useRouter } from 'expo-router';
 import React, { useState, useContext, useMemo } from 'react';
 import {
@@ -19,6 +19,8 @@ import * as Location from 'expo-location';
 import Icon from 'react-native-vector-icons/Feather';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Country, State } from 'country-state-city';
+import { Formik } from 'formik';
+import * as Yup from 'yup';
 import { Button } from '../../components/common/Button';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -28,6 +30,12 @@ import { AuthContext } from '../../context/AuthContext';
 import apiClient from '../../api/apiClient';
 import { profileApi } from '../../api/profileApi';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Validation schema for location step
+const LocationSchema = Yup.object().shape({
+  country: Yup.string().required('Country is required'),
+  state: Yup.string().required('State/Region is required'),
+});
 
 export const ProfileSetupScreen = () => {
   const router = useRouter();
@@ -43,10 +51,7 @@ export const ProfileSetupScreen = () => {
 
   // Location state
   const [selectedCountryCode, setSelectedCountryCode] = useState('NG');
-  const [selectedCountryName, setSelectedCountryName] = useState('Nigeria');
-  const [selectedState, setSelectedState] = useState('');
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const [locationSet, setLocationSet] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showStatePicker, setShowStatePicker] = useState(false);
   const [countrySearchQuery, setCountrySearchQuery] = useState('');
@@ -55,6 +60,12 @@ export const ProfileSetupScreen = () => {
   // Notification state
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [isEnablingNotifications, setIsEnablingNotifications] = useState(false);
+
+  // Location form data
+  const [locationData, setLocationData] = useState({
+    country: 'Nigeria',
+    state: '',
+  });
 
   // Get all countries
   const allCountries = useMemo(() => {
@@ -193,7 +204,7 @@ export const ProfileSetupScreen = () => {
   };
 
   // Location functions
-  const requestAutoLocation = async () => {
+  const requestAutoLocation = async (setFieldValue: any) => {
     try {
       setIsLoadingLocation(true);
       console.log('📍 Requesting location permissions...');
@@ -224,7 +235,7 @@ export const ProfileSetupScreen = () => {
 
         if (matchedCountry) {
           setSelectedCountryCode(matchedCountry.code);
-          setSelectedCountryName(matchedCountry.name);
+          setFieldValue('country', matchedCountry.name);
 
           const countryStates = State.getStatesOfCountry(matchedCountry.code);
           const matchedState = countryStates.find(
@@ -232,13 +243,10 @@ export const ProfileSetupScreen = () => {
           );
 
           if (matchedState) {
-            setSelectedState(matchedState.name);
+            setFieldValue('state', matchedState.name);
           } else if (detectedState) {
-            setSelectedState(detectedState);
+            setFieldValue('state', detectedState);
           }
-
-          await updateLocation(matchedState?.name || detectedState, matchedCountry.name);
-          setLocationSet(true);
         }
       }
     } catch (error: any) {
@@ -247,16 +255,6 @@ export const ProfileSetupScreen = () => {
     } finally {
       setIsLoadingLocation(false);
     }
-  };
-
-  const handleSaveLocation = async () => {
-    if (!selectedCountryName || !selectedState) {
-      Alert.alert('Required Fields', 'Please select both country and state/region to continue');
-      return;
-    }
-
-    await updateLocation(selectedState, selectedCountryName);
-    setLocationSet(true);
   };
 
   const updateLocation = async (state: string, country: string) => {
@@ -274,6 +272,7 @@ export const ProfileSetupScreen = () => {
       }
     } catch (error: any) {
       console.error('❌ Failed to update location:', error);
+      throw error;
     }
   };
 
@@ -318,7 +317,7 @@ export const ProfileSetupScreen = () => {
   };
 
   const handleSkip = () => {
-    // ✅ UPDATED: Don't allow skipping location step (step 2) since country is required
+    // Don't allow skipping location step (step 2) since country is required
     if (step === 2) {
       Alert.alert(
         'Location Required',
@@ -338,15 +337,6 @@ export const ProfileSetupScreen = () => {
   const handleNext = () => {
     if (isNavigating) return;
 
-    if (step === 2 && !locationSet) {
-      Alert.alert(
-        'Location Required',
-        'Please save your location before continuing',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-
     if (step < 3) {
       setStep(step + 1);
     } else {
@@ -354,7 +344,17 @@ export const ProfileSetupScreen = () => {
     }
   };
 
-  const renderCountryPicker = () => (
+  const handleLocationSubmit = async (values: any) => {
+    try {
+      await updateLocation(values.state, values.country);
+      setLocationData(values);
+      setStep(3); // Move to next step
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to save location. Please try again.');
+    }
+  };
+
+  const renderCountryPicker = (props: any) => (
     <Modal
       visible={showCountryPicker}
       transparent
@@ -403,12 +403,12 @@ export const ProfileSetupScreen = () => {
                 style={[
                   styles.pickerItem,
                   { borderBottomColor: theme.borderLight },
-                  selectedCountryCode === item.code && { backgroundColor: theme.primaryLight }
+                  props.values.country === item.name && { backgroundColor: theme.primaryLight }
                 ]}
                 onPress={() => {
                   setSelectedCountryCode(item.code);
-                  setSelectedCountryName(item.name);
-                  setSelectedState('');
+                  props.setFieldValue('country', item.name);
+                  props.setFieldValue('state', ''); // Reset state when country changes
                   setShowCountryPicker(false);
                   setCountrySearchQuery('');
                 }}
@@ -419,7 +419,7 @@ export const ProfileSetupScreen = () => {
                     {item.name}
                   </Text>
                 </View>
-                {selectedCountryCode === item.code && (
+                {props.values.country === item.name && (
                   <Icon name="check" size={20} color={theme.primary} />
                 )}
               </TouchableOpacity>
@@ -437,7 +437,7 @@ export const ProfileSetupScreen = () => {
     </Modal>
   );
 
-  const renderStatePicker = () => (
+  const renderStatePicker = (props: any) => (
     <Modal
       visible={showStatePicker}
       transparent
@@ -486,10 +486,10 @@ export const ProfileSetupScreen = () => {
                 style={[
                   styles.pickerItem,
                   { borderBottomColor: theme.borderLight },
-                  selectedState === item.name && { backgroundColor: theme.primaryLight }
+                  props.values.state === item.name && { backgroundColor: theme.primaryLight }
                 ]}
                 onPress={() => {
-                  setSelectedState(item.name);
+                  props.setFieldValue('state', item.name);
                   setShowStatePicker(false);
                   setStateSearchQuery('');
                 }}
@@ -497,7 +497,7 @@ export const ProfileSetupScreen = () => {
                 <Text style={[styles.pickerItemText, { color: theme.text, fontFamily: Fonts.body }]}>
                   {item.name}
                 </Text>
-                {selectedState === item.name && (
+                {props.values.state === item.name && (
                   <Icon name="check" size={20} color={theme.primary} />
                 )}
               </TouchableOpacity>
@@ -520,157 +520,184 @@ export const ProfileSetupScreen = () => {
       case 1:
         return (
           <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-          <View style={styles.stepContainer}>
-            <TouchableOpacity
-              style={[styles.imagePicker, { borderColor: theme.borderLight }]}
-              onPress={handleImageUpload}
-              disabled={isUploadingImage}
-            >
-              {isUploadingImage ? (
-                <View style={styles.imagePlaceholder}>
-                  <ActivityIndicator size="large" color={theme.primary} />
-                  <Text style={[styles.uploadingText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
-                    Uploading...
-                  </Text>
-                </View>
-              ) : profileImage ? (
-                <>
-                  <Image source={{ uri: profileImage }} style={styles.profileImage} />
-                  {profileImageUrl && (
-                    <View style={[styles.uploadSuccessBadge, { backgroundColor: theme.success }]}>
-                      <Icon name="check-circle" size={24} color="#fff" />
-                    </View>
-                  )}
-                </>
-              ) : (
-                <View style={styles.imagePlaceholder}>
-                  <View style={[styles.iconContainer, { backgroundColor: theme.primaryLight }]}>
-                    <Icon name="camera" size={48} color={theme.primary} />
+            <View style={styles.stepContainer}>
+              <TouchableOpacity
+                style={[styles.imagePicker, { borderColor: theme.borderLight }]}
+                onPress={handleImageUpload}
+                disabled={isUploadingImage}
+              >
+                {isUploadingImage ? (
+                  <View style={styles.imagePlaceholder}>
+                    <ActivityIndicator size="large" color={theme.primary} />
+                    <Text style={[styles.uploadingText, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                      Uploading...
+                    </Text>
                   </View>
-                </View>
+                ) : profileImage ? (
+                  <>
+                    <Image source={{ uri: profileImage }} style={styles.profileImage} />
+                    {profileImageUrl && (
+                      <View style={[styles.uploadSuccessBadge, { backgroundColor: theme.success }]}>
+                        <Icon name="check-circle" size={24} color="#fff" />
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <View style={[styles.iconContainer, { backgroundColor: theme.primaryLight }]}>
+                      <Icon name="camera" size={48} color={theme.primary} />
+                    </View>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {profileImageUrl && (
+                <Text style={[styles.uploadedText, { color: theme.success, fontFamily: Fonts.body }]}>
+                  ✓ Photo uploaded successfully
+                </Text>
               )}
-            </TouchableOpacity>
 
-            {profileImageUrl && (
-              <Text style={[styles.uploadedText, { color: theme.success, fontFamily: Fonts.body }]}>
-                ✓ Photo uploaded successfully
+              <Text style={[styles.stepTitle, { color: theme.text, fontFamily: Fonts.header }]}>
+                Add a Profile Photo
               </Text>
-            )}
-
-            <Text style={[styles.stepTitle, { color: theme.text, fontFamily: Fonts.header }]}>
-              Add a Profile Photo
-            </Text>
-            <Text style={[styles.stepDescription, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
-              This helps your friends recognize you on the leaderboard and makes your profile more personal
-            </Text>
-
-            {!profileImageUrl && (
-              <Button
-                title="Upload Photo"
-                variant="primary"
-                style={styles.actionButton}
-                onPress={handleImageUpload}
-                disabled={isUploadingImage}
-              />
-            )}
-
-            {profileImageUrl && (
-              <Button
-                title="Change Photo"
-                variant="outline"
-                style={styles.actionButton}
-                onPress={handleImageUpload}
-                disabled={isUploadingImage}
-              />
-            )}
-
-            <TouchableOpacity onPress={handleSkip}>
-              <Text style={[styles.skipText, { color: theme.textTertiary, fontFamily: Fonts.body }]}>
-                Skip for now
+              <Text style={[styles.stepDescription, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                This helps your friends recognize you on the leaderboard and makes your profile more personal
               </Text>
-            </TouchableOpacity>
-          </View>
+
+              {!profileImageUrl && (
+                <Button
+                  title="Upload Photo"
+                  variant="primary"
+                  style={styles.actionButton}
+                  onPress={handleImageUpload}
+                  disabled={isUploadingImage}
+                />
+              )}
+
+              {profileImageUrl && (
+                <Button
+                  title="Change Photo"
+                  variant="outline"
+                  style={styles.actionButton}
+                  onPress={handleImageUpload}
+                  disabled={isUploadingImage}
+                />
+              )}
+
+              <TouchableOpacity onPress={handleSkip}>
+                <Text style={[styles.skipText, { color: theme.textTertiary, fontFamily: Fonts.body }]}>
+                  Skip for now
+                </Text>
+              </TouchableOpacity>
+            </View>
           </SafeAreaView>
         );
 
       case 2:
         return (
-          <View style={styles.stepContainer}>
-            <View style={[styles.iconContainer, { backgroundColor: theme.primaryLight }]}>
-              <Icon name="map-pin" size={64} color={theme.primary} />
-            </View>
+          <Formik
+            initialValues={locationData}
+            validationSchema={LocationSchema}
+            onSubmit={handleLocationSubmit}
+          >
+            {(props) => (
+              <View style={styles.stepContainer}>
+                <View style={[styles.iconContainer, { backgroundColor: theme.primaryLight }]}>
+                  <Icon name="map-pin" size={64} color={theme.primary} />
+                </View>
 
-            {locationSet && (
-              <View style={[styles.successBadge, { backgroundColor: theme.successLight }]}>
-                <Icon name="check-circle" size={20} color={theme.success} />
-                <Text style={[styles.successText, { color: theme.success, fontFamily: Fonts.body }]}>
-                  Location saved: {selectedState}, {selectedCountryName}
+                <Text style={[styles.stepTitle, { color: theme.text, fontFamily: Fonts.header }]}>
+                  Your Location
                 </Text>
-              </View>
-            )}
+                <Text style={[styles.stepDescription, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
+                  Help us customize your experience and connect you with teens in your area
+                </Text>
+                <Text style={[styles.requiredNote, { color: theme.error, fontFamily: Fonts.body }]}>
+                  * Country and State are required
+                </Text>
 
-            <Text style={[styles.stepTitle, { color: theme.text, fontFamily: Fonts.header }]}>
-              Your Location
-            </Text>
-            <Text style={[styles.stepDescription, { color: theme.textSecondary, fontFamily: Fonts.body }]}>
-              Help us customize your experience and connect you with teens in your area
-            </Text>
-            <Text style={[styles.requiredNote, { color: theme.error, fontFamily: Fonts.body }]}>
-              * Country and State are required
-            </Text>
+                {/* Country Selector */}
+                <TouchableOpacity
+                  style={[
+                    styles.locationInput,
+                    {
+                      backgroundColor: theme.backgroundSecondary,
+                      borderColor: props.touched.country && props.errors.country ? theme.error : theme.border
+                    }
+                  ]}
+                  onPress={() => setShowCountryPicker(true)}
+                >
+                  <Icon name="globe" size={20} color={theme.primary} />
+                  <Text style={[
+                    styles.locationInputText,
+                    {
+                      color: props.values.country ? theme.text : theme.textSecondary,
+                      fontFamily: Fonts.body
+                    }
+                  ]}>
+                    {props.values.country || 'Select Country *'}
+                  </Text>
+                  <Icon name="chevron-down" size={20} color={theme.textSecondary} />
+                </TouchableOpacity>
+                {props.touched.country && props.errors.country && (
+                  <Text style={[styles.errorText, { color: theme.error, fontFamily: Fonts.body }]}>
+                    {props.errors.country}
+                  </Text>
+                )}
 
-            {/* Country Selector */}
-            <TouchableOpacity
-              style={[styles.locationInput, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}
-              onPress={() => setShowCountryPicker(true)}
-            >
-              <Icon name="globe" size={20} color={theme.primary} />
-              <Text style={[styles.locationInputText, { color: selectedCountryName ? theme.text : theme.textSecondary, fontFamily: Fonts.body }]}>
-                {selectedCountryName || 'Select Country *'}
-              </Text>
-              <Icon name="chevron-down" size={20} color={theme.textSecondary} />
-            </TouchableOpacity>
+                {/* State Selector */}
+                <TouchableOpacity
+                  style={[
+                    styles.locationInput,
+                    {
+                      backgroundColor: theme.backgroundSecondary,
+                      borderColor: props.touched.state && props.errors.state ? theme.error : theme.border
+                    }
+                  ]}
+                  onPress={() => setShowStatePicker(true)}
+                  disabled={!props.values.country}
+                >
+                  <Icon name="map-pin" size={20} color={theme.primary} />
+                  <Text style={[
+                    styles.locationInputText,
+                    {
+                      color: props.values.state ? theme.text : theme.textSecondary,
+                      fontFamily: Fonts.body
+                    }
+                  ]}>
+                    {props.values.state || (props.values.country ? 'Select State/Region *' : 'Select country first')}
+                  </Text>
+                  <Icon name="chevron-down" size={20} color={theme.textSecondary} />
+                </TouchableOpacity>
+                {props.touched.state && props.errors.state && (
+                  <Text style={[styles.errorText, { color: theme.error, fontFamily: Fonts.body }]}>
+                    {props.errors.state}
+                  </Text>
+                )}
 
-            {/* State Selector */}
-            <TouchableOpacity
-              style={[styles.locationInput, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}
-              onPress={() => setShowStatePicker(true)}
-              disabled={!selectedCountryCode}
-            >
-              <Icon name="map-pin" size={20} color={theme.primary} />
-              <Text style={[styles.locationInputText, { color: selectedState ? theme.text : theme.textSecondary, fontFamily: Fonts.body }]}>
-                {selectedState || (selectedCountryCode ? 'Select State/Region *' : 'Select country first')}
-              </Text>
-              <Icon name="chevron-down" size={20} color={theme.textSecondary} />
-            </TouchableOpacity>
-
-            {!locationSet ? (
-              <>
                 <Button
                   title="Save Location"
                   variant="primary"
                   style={styles.actionButton}
-                  onPress={handleSaveLocation}
-                  disabled={!selectedCountryName || !selectedState}
+                  onPress={() => props.handleSubmit()}
+                  isLoading={props.isSubmitting}
+                  disabled={!props.values.country || !props.values.state}
                 />
+                
                 <Button
                   title={isLoadingLocation ? "Detecting..." : "Use Current Location"}
                   variant="outline"
                   style={styles.actionButton}
-                  onPress={requestAutoLocation}
+                  onPress={() => requestAutoLocation(props.setFieldValue)}
                   disabled={isLoadingLocation}
                   icon={isLoadingLocation ? <ActivityIndicator size="small" color={theme.primary} /> : undefined}
                 />
-              </>
-            ) : (
-              <Button
-                title="Change Location"
-                variant="outline"
-                style={styles.actionButton}
-                onPress={() => setLocationSet(false)}
-              />
+
+                {renderCountryPicker(props)}
+                {renderStatePicker(props)}
+              </View>
             )}
-          </View>
+          </Formik>
         );
 
       case 3:
@@ -760,12 +787,9 @@ export const ProfileSetupScreen = () => {
           title={step === 3 ? 'Get Started' : 'Next'}
           onPress={handleNext}
           variant="primary"
-          disabled={isUploadingImage || isNavigating || isLoadingLocation || isEnablingNotifications}
+          disabled={isUploadingImage || isNavigating || isLoadingLocation || isEnablingNotifications || step === 2}
         />
       </View>
-
-      {renderCountryPicker()}
-      {renderStatePicker()}
     </View>
   );
 };
@@ -890,12 +914,19 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   locationInputText: {
     flex: 1,
     marginLeft: spacing.md,
     fontSize: fontSize.base,
+  },
+  errorText: {
+    fontSize: fontSize.sm,
+    marginBottom: spacing.md,
+    width: '100%',
+    maxWidth: 320,
+    textAlign: 'left',
   },
   actionButton: {
     marginBottom: spacing.md,
